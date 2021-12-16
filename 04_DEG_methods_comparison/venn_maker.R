@@ -122,54 +122,61 @@ L4_venn <- ggVennDiagram(L4_venn_list, color = "black", lwd = 0.8, lty = 1, cate
   theme(plot.title = element_text(hjust = 0.5))
 ggsave("L4_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
-Pvalb_venn_list <- list(Pvalb_Limma_gene_list, Pvalb_EdgeR_gene_list, Pvalb_DESeq2_gene_list)
-Pvalb_venn <- ggVennDiagram(Pvalb_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR", "DESeq2")) +
+Pvalb_venn_list <- list(Pvalb_Osman_Limma_gene_list, Pvalb_Kari_Limma_gene_list)
+Pvalb_venn <- ggVennDiagram(Pvalb_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma_Osman", "Limma_Kari")) +
   ggplot2::scale_fill_gradient(low = "white", high = "blue") +
   ggtitle("Differentially Expressed Genes Identified for Pvalb", subtitle = subtitle_info) +
   theme(plot.title = element_text(hjust = 0.5))
-ggsave("Pvalb_M_MUT_and_WT_M_E18_WB_venn.pdf", device = "pdf", path = venn_dir)
+ggsave("Pvalb_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
-Sncg_venn_list <- list(Sncg_Limma_gene_list, Sncg_EdgeR_gene_list, Sncg_DESeq2_gene_list)
-Sncg_venn <- ggVennDiagram(Sncg_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR", "DESeq2")) +
+Sncg_venn_list <- list(Sncg_Osman_Limma_gene_list, Sncg_Kari_Limma_gene_list)
+Sncg_venn <- ggVennDiagram(Sncg_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma_Osman", "Limma_Kari")) +
   ggplot2::scale_fill_gradient(low = "white", high = "blue") +
   ggtitle("Differentially Expressed Genes Identified for Sncg", subtitle = subtitle_info) +
   theme(plot.title = element_text(hjust = 0.5))
-ggsave("Sncg_M_MUT_and_WT_M_E18_WB_venn.pdf", device = "pdf", path = venn_dir)
+ggsave("Sncg_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
-Non_neuronal_venn_list <- list(Non_neuronal_Limma_gene_list, Non_neuronal_EdgeR_gene_list, Non_neuronal_DESeq2_gene_list)
-Non_neuronal_venn <- ggVennDiagram(Non_neuronal_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR", "DESeq2")) +
+Non_neuronal_venn_list <- list(Non_neuronal_Osman_Limma_gene_list, Non_neuronal_Kari_Limma_gene_list)
+Non_neuronal_venn <- ggVennDiagram(Non_neuronal_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma_Osman", "Limma_Kari")) +
   ggplot2::scale_fill_gradient(low = "white", high = "blue") +
   ggtitle("Differentially Expressed Genes Identified for Non_neuronal", subtitle = subtitle_info) +
   theme(plot.title = element_text(hjust = 0.5))
-ggsave("Non_neuronal_M_MUT_and_WT_M_E18_WB_venn.pdf", device = "pdf", path = venn_dir)
+ggsave("Non_neuronal_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
-Oligo_venn_list <- list(Oligo_Limma_gene_list, Oligo_EdgeR_gene_list)
-Oligo_venn <- ggVennDiagram(Oligo_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR")) +
+Oligo_venn_list <- list(Oligo_Osman_Limma_gene_list, Oligo_Kari_Limma_gene_list)
+Oligo_venn <- ggVennDiagram(Oligo_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma_Osman", "Limma_Kari")) +
   ggplot2::scale_fill_gradient(low = "white", high = "blue") +
   ggtitle("Differentially Expressed Genes Identified for Oligo", subtitle = subtitle_info) +
   theme(plot.title = element_text(hjust = 0.5))
-ggsave("Oligo_M_MUT_and_WT_M_E18_WB_venn.pdf", device = "pdf", path = venn_dir)
+ggsave("Oligo_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
-Vip_venn_list <- list(Vip_Limma_gene_list, Vip_EdgeR_gene_list, Vip_DESeq2_gene_list)
-Vip_venn <- ggVennDiagram(Vip_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR", "DESeq2")) +
+Vip_venn_list <- list(Vip_Osman_Limma_gene_list, Vip_Kari_Limma_gene_list)
+Vip_venn <- ggVennDiagram(Vip_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma_Osman", "Limma_Kari")) +
   ggplot2::scale_fill_gradient(low = "white", high = "blue") +
   ggtitle("Differentially Expressed Genes Identified for Vip", subtitle = subtitle_info) +
   theme(plot.title = element_text(hjust = 0.5))
-ggsave("Vip_M_MUT_and_WT_M_E18_WB_venn.pdf", device = "pdf", path = venn_dir)
+ggsave("Vip_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
-Lamp5_venn_list <- list(Lamp5_Limma_gene_list, Lamp5_EdgeR_gene_list, Lamp5_DESeq2_gene_list)
-Lamp5_venn <- ggVennDiagram(Lamp5_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR", "DESeq2")) +
+Lamp5_venn_list <- list(Lamp5_Osman_Limma_gene_list, Lamp5_Kari_Limma_gene_list)
+Lamp5_venn <- ggVennDiagram(Lamp5_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma_Osman", "Limma_Kari")) +
   ggplot2::scale_fill_gradient(low = "white", high = "blue") +
   ggtitle("Differentially Expressed Genes Identified for Lamp5", subtitle = subtitle_info) +
   theme(plot.title = element_text(hjust = 0.5))
-ggsave("Lamp5_M_MUT_and_WT_M_E18_WB_venn.pdf", device = "pdf", path = venn_dir)
+ggsave("Lamp5_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
-Astro_venn_list <- list(Astro_Limma_gene_list, Astro_EdgeR_gene_list, Astro_DESeq2_gene_list)
-Astro_venn <- ggVennDiagram(Astro_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR", "DESeq2")) +
+Astro_venn_list <- list(Astro_Osman_Limma_gene_list, Astro_Kari_Limma_gene_list)
+Astro_venn <- ggVennDiagram(Astro_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma_Osman", "Limma_Kari")) +
   ggplot2::scale_fill_gradient(low = "white", high = "blue") +
   ggtitle("Differentially Expressed Genes Identified for Astro", subtitle = subtitle_info) +
   theme(plot.title = element_text(hjust = 0.5))
-ggsave("Astro_M_MUT_and_WT_M_E18_WB_venn.pdf", device = "pdf", path = venn_dir)
+ggsave("Astro_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
+
+Peri_venn_list <- list(Peri_Osman_Limma_gene_list, Peri_Kari_Limma_gene_list)
+Peri_venn <- ggVennDiagram(Peri_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma_Osman", "Limma_Kari")) +
+  ggplot2::scale_fill_gradient(low = "white", high = "blue") +
+  ggtitle("Differentially Expressed Genes Identified for Peri", subtitle = subtitle_info) +
+  theme(plot.title = element_text(hjust = 0.5))
+ggsave("Peri_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
 Peri_venn_list <- list(Peri_Limma_gene_list, Peri_EdgeR_gene_list, Peri_DESeq2_gene_list)
 Peri_venn <- ggVennDiagram(Peri_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR", "DESeq2")) +
