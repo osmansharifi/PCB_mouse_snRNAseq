@@ -101,26 +101,26 @@ L6_venn <- ggVennDiagram(L6_venn_list, color = "black", lwd = 0.8, lty = 1, cate
   theme(plot.title = element_text(hjust = 0.5))
 ggsave("L6_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
-Sst_venn_list <- list(Sst_Limma_gene_list, Sst_EdgeR_gene_list, Sst_DESeq2_gene_list)
-Sst_venn <- ggVennDiagram(Sst_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR", "DESeq2")) +
+Sst_venn_list <- list(Sst_Osman_Limma_gene_list, Sst_Kari_Limma_gene_list)
+Sst_venn <- ggVennDiagram(Sst_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma_Osman", "Limma_Kari")) +
   ggplot2::scale_fill_gradient(low = "white", high = "blue") +
   ggtitle("Differentially Expressed Genes Identified for Sst", subtitle = subtitle_info) +
   theme(plot.title = element_text(hjust = 0.5))
-ggsave("Sst_M_MUT_and_WT_M_E18_WB_venn.pdf", device = "pdf", path = venn_dir)
+ggsave("Sst_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
-L5_venn_list <- list(L5_Limma_gene_list, L5_EdgeR_gene_list, L5_DESeq2_gene_list)
-L5_venn <- ggVennDiagram(L5_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR", "DESeq2")) +
+L5_venn_list <- list(L5_Osman_Limma_gene_list, L5_Kari_Limma_gene_list)
+L5_venn <- ggVennDiagram(L5_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma_Osman", "Limma_Kari")) +
   ggplot2::scale_fill_gradient(low = "white", high = "blue") +
   ggtitle("Differentially Expressed Genes Identified for L5", subtitle = subtitle_info) +
   theme(plot.title = element_text(hjust = 0.5))
-ggsave("L5_M_MUT_and_WT_M_E18_WB_venn.pdf", device = "pdf", path = venn_dir)
+ggsave("L5_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
-L4_venn_list <- list(L4_Limma_gene_list, L4_EdgeR_gene_list, L4_DESeq2_gene_list)
-L4_venn <- ggVennDiagram(L4_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR", "DESeq2")) +
+L4_venn_list <- list(L4_Osman_Limma_gene_list, L4_Kari_Limma_gene_list)
+L4_venn <- ggVennDiagram(L4_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma_Osman", "Limma_Kari")) +
   ggplot2::scale_fill_gradient(low = "white", high = "blue") +
   ggtitle("Differentially Expressed Genes Identified for L4", subtitle = subtitle_info) +
   theme(plot.title = element_text(hjust = 0.5))
-ggsave("L4_M_MUT_and_WT_M_E18_WB_venn.pdf", device = "pdf", path = venn_dir)
+ggsave("L4_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
 Pvalb_venn_list <- list(Pvalb_Limma_gene_list, Pvalb_EdgeR_gene_list, Pvalb_DESeq2_gene_list)
 Pvalb_venn <- ggVennDiagram(Pvalb_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR", "DESeq2")) +
