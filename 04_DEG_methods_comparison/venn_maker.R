@@ -178,44 +178,38 @@ Peri_venn <- ggVennDiagram(Peri_venn_list, color = "black", lwd = 0.8, lty = 1, 
   theme(plot.title = element_text(hjust = 0.5))
 ggsave("Peri_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
-Peri_venn_list <- list(Peri_Limma_gene_list, Peri_EdgeR_gene_list, Peri_DESeq2_gene_list)
-Peri_venn <- ggVennDiagram(Peri_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR", "DESeq2")) +
-  ggplot2::scale_fill_gradient(low = "white", high = "blue") +
-  ggtitle("Differentially Expressed Genes Identified for Peri", subtitle = subtitle_info) +
-  theme(plot.title = element_text(hjust = 0.5))
-ggsave("Peri_M_MUT_and_WT_M_E18_WB_venn.pdf", device = "pdf", path = venn_dir)
-
-Endo_venn_list <- list(Endo_Limma_gene_list, Endo_EdgeR_gene_list, Endo_DESeq2_gene_list)
-Endo_venn <- ggVennDiagram(Endo_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR", "DESeq2")) +
+Endo_venn_list <- list(Endo_Osman_Limma_gene_list, Endo_Kari_Limma_gene_list)
+Endo_venn <- ggVennDiagram(Endo_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma_Osman", "Limma_Kari")) +
   ggplot2::scale_fill_gradient(low = "white", high = "blue") +
   ggtitle("Differentially Expressed Genes Identified for Endo", subtitle = subtitle_info) +
   theme(plot.title = element_text(hjust = 0.5))
-ggsave("Endo_M_MUT_and_WT_M_E18_WB_venn.pdf", device = "pdf", path = venn_dir)
+ggsave("Endo_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
-unique_venn_list <- list(unique_Limma_genes, unique_EdgeR_genes, unique_DESeq2_genes)
-unique_genes_venn <- ggVennDiagram(unique_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma", "EdgeR", "DESeq2")) +
+unique_venn_list <- list(unique_Osman_Limma_genes, unique_Kari_Limma_genes)
+unique_genes_venn <- ggVennDiagram(unique_venn_list, color = "black", lwd = 0.8, lty = 1, category.names = c("Limma_Osman", "Limma_Kari")) +
   ggplot2::scale_fill_gradient(low = "white", high = "blue") +
   ggtitle("Unique Differentially Expressed Genes Identified for All Cell Types", subtitle = subtitle_info) +
   theme(plot.title = element_text(hjust = 0.5))
-ggsave("unique_genes_M_MUT_and_WT_M_E18_WB_venn.pdf", device = "pdf", path = venn_dir)
+ggsave("unique_genes_M_MUT_and_WT_F_P150_CORT_venn.pdf", device = "pdf", path = venn_dir)
 
 # Show genes identified by all methods for cell types
-Reduce(intersect, list(L2_3_IT_Limma_gene_list, L2_3_IT_DESeq2_gene_list, L2_3_IT_EdgeR_gene_list))
-Reduce(intersect, list(L6_Limma_gene_list, L6_DESeq2_gene_list, L6_EdgeR_gene_list))
-Reduce(intersect, list(Sst_Limma_gene_list, Sst_DESeq2_gene_list, Sst_EdgeR_gene_list))
-Reduce(intersect, list(L5_Limma_gene_list, L5_DESeq2_gene_list, L5_EdgeR_gene_list))
-Reduce(intersect, list(L4_Limma_gene_list, L4_DESeq2_gene_list, L4_EdgeR_gene_list))
-Reduce(intersect, list(Pvalb_Limma_gene_list, Pvalb_DESeq2_gene_list, Pvalb_EdgeR_gene_list))
-Reduce(intersect, list(Sncg_Limma_gene_list, Sncg_DESeq2_gene_list, Sncg_EdgeR_gene_list))
-Reduce(intersect, list(Non_neuronal_Limma_gene_list, Non_neuronal_DESeq2_gene_list, Non_neuronal_EdgeR_gene_list))
-Reduce(intersect, list(Oligo_Limma_gene_list, Oligo_DESeq2_gene_list, Oligo_EdgeR_gene_list))
-Reduce(intersect, list(Vip_Limma_gene_list, Vip_DESeq2_gene_list, Vip_EdgeR_gene_list))
-Reduce(intersect, list(Lamp5_Limma_gene_list, Lamp5_DESeq2_gene_list, Lamp5_EdgeR_gene_list))
-Reduce(intersect, list(Astro_Limma_gene_list, Astro_DESeq2_gene_list, Astro_EdgeR_gene_list))
-Reduce(intersect, list(Peri_Limma_gene_list, Peri_DESeq2_gene_list, Peri_EdgeR_gene_list))
-Reduce(intersect, list(Endo_Limma_gene_list, Endo_DESeq2_gene_list, Endo_EdgeR_gene_list))
+Reduce(intersect, list(L2_3_IT_Osman_Limma_gene_list, L2_3_IT_Kari_Limma_gene_list))
+Reduce(intersect, list(L6_Osman_Limma_gene_list, L6_Kari_Limma_gene_list))
+Reduce(intersect, list(Sst_Osman_Limma_gene_list, Sst_Kari_Limma_gene_list))
+Reduce(intersect, list(L5_Osman_Limma_gene_list, L5_Kari_Limma_gene_list))
+Reduce(intersect, list(L4_Osman_Limma_gene_list, L4_Kari_Limma_gene_list))
+Reduce(intersect, list(Pvalb_Osman_Limma_gene_list, Pvalb_Kari_Limma_gene_list))
+Reduce(intersect, list(Sncg_Osman_Limma_gene_list, Sncg_Kari_Limma_gene_list))
+Reduce(intersect, list(Non_neuronal_Osman_Limma_gene_list, Non_neuronal_Kari_Limma_gene_list))
+Reduce(intersect, list(Oligo_Osman_Limma_gene_list, Oligo_Kari_Limma_gene_list))
+Reduce(intersect, list(Vip_Osman_Limma_gene_list, Vip_Kari_Limma_gene_list))
+Reduce(intersect, list(Lamp5_Osman_Limma_gene_list, Lamp5_Kari_Limma_gene_list))
+Reduce(intersect, list(Astro_Osman_Limma_gene_list, Astro_Kari_Limma_gene_list))
+Reduce(intersect, list(Peri_Osman_Limma_gene_list, Peri_Kari_Limma_gene_list))
+Reduce(intersect, list(Endo_Osman_Limma_gene_list, Endo_Kari_Limma_gene_list))
 
-unique_genes <- Reduce(intersect, list(unique_Limma_genes, unique_DESeq2_genes, unique_EdgeR_genes))
+unique_genes <- Reduce(intersect, list(unique_Osman_Limma_genes, unique_Kari_Limma_genes))
 for (unique_gene in unique_genes){
   print(unique_gene)
 }
+length(unique_genes)
