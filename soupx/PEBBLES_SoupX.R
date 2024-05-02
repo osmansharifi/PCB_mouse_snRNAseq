@@ -5,6 +5,7 @@
 ####################
 library(Seurat)
 library(SoupX)
+library(dplyr)
 
 ###########################
 ## Set working directory ##
@@ -66,6 +67,14 @@ PEBBLES_soupx = CreateSeuratObject(srat,
                           min.features = 200,
                           names.field = 2,
                           names.delim = "\\-")
+
+# Add a new columns metadata
+samples <- sub("_[^_]+$", "", rownames(PEBBLES_soupx@meta.data))
+PEBBLES_soupx$meta.data$Samples <- samples
+PEBBLES_soupx@meta.data$Genotype <- ifelse(grepl("WT", PEBBLES_soupx@meta.data$Samples), "WT",
+                                           ifelse(grepl("HET", PEBBLES_soupx@meta.data$Samples), "HET", NA))
+PEBBLES_soupx@meta.data$Treatment <- ifelse(grepl("PCB", PEBBLES_soupx@meta.data$Samples), "PCB",
+                                           ifelse(grepl("VEHICLE", PEBBLES_soupx@meta.data$Samples), "VEHICLE", NA))
 
 #################################
 ## Save the SoupX Seurat object##
