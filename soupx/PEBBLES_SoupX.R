@@ -10,7 +10,7 @@ library(dplyr)
 ###########################
 ## Set working directory ##
 ###########################
-setwd('/share/lasallelab/data/2020_Rett_Mouse_SingleCellRNAseq_Osman/03_soupx')
+setwd('/share/lasallelab/Osman/2021_PEBBLES_Cortex/2021_mouse_PCB_raw_reads/02-soupx')
 
 #############################
 ## Load Samples with SoupX ##
