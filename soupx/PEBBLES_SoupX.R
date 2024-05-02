@@ -71,4 +71,3 @@ PEBBLES_soupx = CreateSeuratObject(srat,
 ## Save the SoupX Seurat object##
 #################################
 save(PEBBLES_soupx,file="PEBBLES_soupx.RData")
-
