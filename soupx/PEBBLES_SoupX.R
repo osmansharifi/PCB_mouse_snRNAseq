@@ -79,4 +79,4 @@ PEBBLES_soupx@meta.data$Treatment <- ifelse(grepl("PCB", PEBBLES_soupx@meta.data
 #################################
 ## Save the SoupX Seurat object##
 #################################
-save(PEBBLES_soupx,file="PEBBLES_soupx.RData")
+save(PEBBLES_soupx,file="/share/lasallelab/Osman/2021_PEBBLES_Cortex/2021_mouse_PCB_raw_reads/02-soupx/PEBBLES_soupx.RData")
