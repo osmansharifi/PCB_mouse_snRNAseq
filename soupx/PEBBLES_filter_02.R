@@ -155,12 +155,12 @@ all_markers <- FindAllMarkers(object = PEBBLES_soupx) %>%
   Add_Pct_Diff() %>%
   filter(pct_diff > 0.6)
 
-top_markers <- Extract_Top_Markers(marker_dataframe = all_markers, num_genes = 7, named_vector = FALSE,
+top_markers <- Extract_Top_Markers(marker_dataframe = all_markers, num_genes = 5, named_vector = FALSE,
                                    make_unique = TRUE)
 
 Clustered_DotPlot(seurat_object = PEBBLES_soupx, features = top_markers)
-DotPlot_scCustom(seurat_object = PEBBLES_soupx, features = top_markers, flip_axes = T,
-                 remove_axis_titles = FALSE)
+DotPlot_scCustom(seurat_object = PEBBLES_soupx, features = top_markers, flip_axes = T, remove_axis_titles = FALSE)
+DoHeatmap(object = PEBBLES_soupx, features = top_markers, group.by = c("Treatment", "Samples"))
 ggplot2::ggsave("/Users/osman/Desktop/LaSalle_lab/Rett_PCB_snRNAseq/Individual_plots/celltype_markers.pdf",
                 device = NULL,
                 height = 8.5,
