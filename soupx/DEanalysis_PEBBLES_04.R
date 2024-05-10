@@ -5,16 +5,16 @@ stopifnot(suppressMessages(sapply(packages, require, character.only=TRUE)))
 
 setwd(glue::glue("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/soupx/"))
 load("PEBBLES_soupx_labeled.RData")
-subset <- subset(PEBBLES_soupx, subset = Genotype == "HET")
-s.obj = subset
+s.obj <- subset(PEBBLES_soupx, subset = Genotype == "HET")
+
 ## creating design matrix 
 
 expr_matrix = s.obj@assays$RNA@counts
 
 design = data.frame(cell_type = s.obj$predicted.id,
                     #activation.status = ifelse(grepl("activated", s.obj$cell.type)=="TRUE", "activated", "unactivated"),
-                    sample_ID = s.obj$orig.ident,
-                    cell_cycle = s.obj$cell.cycle,
+                    sample_ID = s.obj$Samples,
+                    #cell_cycle = s.obj$cell.cycle,
                     cell_ID = colnames(expr_matrix),
                     genotype = s.obj$Genotype,
                     percent.mito = s.obj$percent.mito,
@@ -24,7 +24,8 @@ design = design %>%
   dplyr::mutate_if(is.character, as.factor)
 
 design$treatment = factor(design$treatment, levels=c("VEHICLE", "PCB"))
-
+design$sample_ID = factor(design$sample_ID)
+design$genotype = factor(design$genotype)
 ## creating count matrices split by cell type
 
 cell_types = as.factor(levels(design$cell_type))
@@ -35,16 +36,12 @@ expr_matrix_list = lapply(levels(cell_types), function(x) {
 
 names(expr_matrix_list) = as.character(cell_types)
 
-# merge lists of expression data
-
-expr_matrix_new = expr_matrix_list
-
 # create DGEList object
 
-cell_types_all = names(expr_matrix_new)
+cell_types_all = names(expr_matrix_list)
 
 DGEList = lapply(cell_types_all, function(x) {
-  DGEList(expr_matrix_new[[x]])
+  DGEList(expr_matrix_list[[x]])
 })
 
 names(DGEList) = cell_types_all
