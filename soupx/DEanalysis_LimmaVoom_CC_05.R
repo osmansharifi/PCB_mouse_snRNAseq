@@ -155,7 +155,7 @@ polychrome_palette <- c("#5A5156FF","#E4E1E3FF","#F6222EFF","#FE00FAFF","#16FF32
 ## Load Data ##
 ###############
 #setwd(glue::glue("/Users/osman/Documents/GitHub/snRNA-seq-pipeline/scripts/07_human_cell_labeling/human_rettcort_labeled"))
-load("/Users/osman/Documents/GitHub/snRNA-seq-pipeline/scripts/07_human_cell_labeling/human_rettcort_labeled/DEanalysis_01.1.RData")
+load("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/soupx/DEanalysis_01.RData")
 s.obj = human #change this to the name of the Seurat object you started with
 
 dir.create("limmaVoomCC")
@@ -174,10 +174,10 @@ cell_types_all = names(DGEList_high)
 cell_types_all = cell_types_all[c(1:15)] # not enough cells for these cell types
 
 for (i in cell_types_all) {
-  DGEList_high[[i]]$samples$group = ifelse(grepl("WT", colnames(DGEList_high[[i]]$counts))=="TRUE", "WT", "RTT")
+  DGEList_high[[i]]$samples$group = ifelse(grepl("VEHICLE", colnames(DGEList_high[[i]]$counts))=="TRUE", "VEHICLE", "PCB")
 }
 
-cell_types_all = cell_types_all[c(1:15)]
+cell_types_all = cell_types_all[c(3:12)]
 
 for (i in cell_types_all) {
   
@@ -188,7 +188,7 @@ for (i in cell_types_all) {
   print(glue::glue("Normalizing {i} cells"))
   
   #subsetting design matrix by cell type
-  design$genotype = factor(design$genotype, levels=c("CTRL", "RTT"))
+  #design$genotype = factor(design$genotype, levels=c("CTRL", "RTT"))
   
   # Raw density of log-CPM values
   
@@ -218,9 +218,11 @@ for (i in cell_types_all) {
                    # html = glue::glue("{i}_MDS-Plot"),
                    # launch = FALSE)
   
+  # Assuming 'mm' is your DataFrame
+  filtered_design <- design[design$cell_type == glue::glue("{i}"), ]
   
-  mm <- model.matrix(~genotype + cell_cycle + percent.mito,
-                     data = design)
+  mm <- model.matrix(~treatment + percent.mito,
+                     data = filtered_design)
   
   
   # Voom
@@ -232,7 +234,7 @@ for (i in cell_types_all) {
   
   correlations <- duplicateCorrelation(voomLogCPM,
                                        mm,
-                                       block = design$sample_ID)
+                                       block = filtered_design$sample_ID)
   
   correlations <- correlations$consensus.correlation
   
@@ -255,7 +257,7 @@ for (i in cell_types_all) {
   fit <- lmFit(voomLogCPM,
                mm,
                correlation = correlations,
-               block = design$sample_ID)
+               block = filtered_design$sample_ID)
   
   head(coef(fit))
   
@@ -267,10 +269,10 @@ for (i in cell_types_all) {
   
   # Create DEG List 
   
-  print(glue::glue("Creating DEG list of {i} cells for genotype"))
+  print(glue::glue("Creating DEG list of {i} cells for treatment"))
   
   efit <- fit %>%
-    contrasts.fit(coef="genotypeMUTANT") %>%
+    contrasts.fit(coef="treatmentPCB") %>%
     eBayes()
   
   pdf(glue::glue("{i}/QC/final_model_mean-variance_trend.pdf"), height=8.5, width=11)
@@ -278,12 +280,6 @@ for (i in cell_types_all) {
   plotSA(efit, main=glue::glue("Final model {i}: Mean-variance trend"))
   
   dev.off()
-  
-  Glimma::glimmaMA(efit,
-                   dge = DGEList_high[[i]],
-                   path = getwd(),
-                   html = glue::glue("interactivePlots/{i}_MDA-Plot.html"),
-                   launch = FALSE)
   
   # Top DEGs
   

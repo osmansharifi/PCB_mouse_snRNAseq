@@ -3,29 +3,27 @@
 packages <- c("tidyr", "openxlsx", "glue", "magrittr", "Seurat", "limma", "edgeR", "ggplot2", "ggpubr", "viridis")
 stopifnot(suppressMessages(sapply(packages, require, character.only=TRUE)))
 
-s.obj.name = "hypo.combined.validated" #change this to the name of the Seurat object you started with
-
-setwd(glue::glue("/Users/lasallelab/Documents/GitHub/hypothalamus/03_Hypothalamus_data"))
-
-load("/Users/lasallelab/Documents/GitHub/hypothalamus/02_Scripts/hypo.combined.validated.RData")
-s.obj = hypo.combined.integrated
-rm(hypo.combined.integrated)
+setwd(glue::glue("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/soupx/"))
+load("PEBBLES_soupx_labeled.RData")
+subset <- subset(PEBBLES_soupx, subset = Genotype == "HET")
+s.obj = subset
 ## creating design matrix 
 
 expr_matrix = s.obj@assays$RNA@counts
 
-design = data.frame(cell_type = s.obj$Cell_Type,
+design = data.frame(cell_type = s.obj$predicted.id,
                     #activation.status = ifelse(grepl("activated", s.obj$cell.type)=="TRUE", "activated", "unactivated"),
                     sample_ID = s.obj$orig.ident,
                     cell_cycle = s.obj$cell.cycle,
                     cell_ID = colnames(expr_matrix),
-                    genotype = s.obj$genotype,
-                    percent.mito = s.obj$percent.mito)
+                    genotype = s.obj$Genotype,
+                    percent.mito = s.obj$percent.mito,
+                    treatment = s.obj$Treatment)
 
 design = design %>%
   dplyr::mutate_if(is.character, as.factor)
 
-design$genotype = factor(design$genotype, levels=c("WT", "MUT"))
+design$treatment = factor(design$treatment, levels=c("VEHICLE", "PCB"))
 
 ## creating count matrices split by cell type
 
