@@ -171,13 +171,13 @@ cell_types_all = names(DGEList_high)
 
 #cell_types_all = cell_types_all[-(c(which(grepl("Sncg-activated", cell_types_all)=="TRUE")))] #removing Sncg-activated from analysis bc not enough cells
 
-cell_types_all = cell_types_all[c(1:15)] # not enough cells for these cell types
+cell_types_all = cell_types_all[c(2:12)] # not enough cells for these cell types
 
 for (i in cell_types_all) {
   DGEList_high[[i]]$samples$group = ifelse(grepl("VEHICLE", colnames(DGEList_high[[i]]$counts))=="TRUE", "VEHICLE", "PCB")
 }
 
-cell_types_all = cell_types_all[c(3:12)]
+cell_types_all = cell_types_all[c(2:10)]
 
 for (i in cell_types_all) {
   
