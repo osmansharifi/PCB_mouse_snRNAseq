@@ -23,7 +23,7 @@ design = data.frame(cell_type = s.obj$predicted.id,
 design = design %>%
   dplyr::mutate_if(is.character, as.factor)
 
-design$treatment = factor(design$treatment, levels=c("VEHICLE", "PCB"))
+design$treatment = factor(design$treatment)
 design$sample_ID = factor(design$sample_ID)
 design$genotype = factor(design$genotype, levels = c("HET", "WT"))
 ## creating count matrices split by cell type

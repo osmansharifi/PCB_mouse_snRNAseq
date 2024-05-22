@@ -87,6 +87,7 @@ ggsave("/Users/osman/Desktop/LaSalle_lab/Rett_PCB_snRNAseq/Individual_plots/pca.
 ElbowPlot(PEBBLES_soupx)
 
 #Filtered plots
+Idents(PEBBLES_soupx) <- "Samples"
 QC_Plot_UMIvsGene(seurat_object = PEBBLES_soupx, low_cutoff_gene = 600, high_cutoff_gene = 5000, low_cutoff_UMI = 500,
                   high_cutoff_UMI = 20000) +labs(x = "UMIs per nucleus", y = "Genes per nucleus" )
 ggsave("/Users/osman/Desktop/LaSalle_lab/Rett_PCB_snRNAseq/Individual_plots/postfilter_UMIvsGENE.pdf", 
@@ -165,4 +166,22 @@ ggplot2::ggsave("/Users/osman/Desktop/LaSalle_lab/Rett_PCB_snRNAseq/Individual_p
                 device = NULL,
                 height = 8.5,
                 width = 12)
+Idents(PEBBLES_soupx) <- "Treatment"
+DimPlot_scCustom(seurat_object = PEBBLES_soupx, pt.size = 0.5, figure_plot = FALSE, group.by = "Treatment")
+ggplot2::ggsave("/Users/osman/Desktop/LaSalle_lab/Rett_PCB_snRNAseq/Individual_plots/Treatment.pdf",
+                device = NULL,
+                height = 8.5,
+                width = 12)
+DimPlot_scCustom(seurat_object = PEBBLES_soupx, pt.size = 0.5, figure_plot = FALSE, group.by = "Genotype", )
+ggplot2::ggsave("/Users/osman/Desktop/LaSalle_lab/Rett_PCB_snRNAseq/Individual_plots/Genotype.pdf",
+                device = NULL,
+                height = 8.5,
+                width = 12)
+FeaturePlot_scCustom(PEBBLES_soupx, features = "Mecp2", pt.size = 0.05)
+ggplot2::ggsave("/Users/osman/Desktop/LaSalle_lab/Rett_PCB_snRNAseq/Individual_plots/PCB_Mecp2.pdf",
+                device = NULL,
+                height = 8.5,
+                width = 12)
+FeaturePlot_scCustom(PEBBLES_soupx, features = "Mecp2", pt.size = 0.05)
+
 save(PEBBLES_soupx, file="/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/soupx/PEBBLES_soupx_labeled.RData")

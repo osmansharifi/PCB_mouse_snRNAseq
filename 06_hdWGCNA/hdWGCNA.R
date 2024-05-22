@@ -1,15 +1,12 @@
 # This program will perform hdWGCNA analysis on single cell data
 # single-cell analysis package
 library(Seurat)
-
-# plotting and data science packages
 library(tidyverse)
 library(cowplot)
 library(patchwork)
-
-# co-expression network analysis packages:
 library(WGCNA)
 library(hdWGCNA)
+library(dplyr)
 
 # using the cowplot theme for ggplot
 theme_set(theme_cowplot())
@@ -19,75 +16,83 @@ set.seed(1234)
 
 # load the snRNA-seq dataset
 load("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/soupx/PEBBLES_soupx_labeled.RData")
-setwd("/Users/osman/Documents/GitHub/snRNA-seq-pipeline/scripts/08_hdWGCNA_analysis")
-Idents(all.cortex.combined) <- "celltype.call"
+setwd("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/06_hdWGCNA")
+PEBBLES_soupx$cell_type = PEBBLES_soupx$predicted.id
+
+# Select columns that do not start with 'predicted' or start with 'predicted.id'
+# Find columns starting with 'prediction' or 'RNA'
+cols_to_null <- grep("^prediction|^RNA", names(PEBBLES_soupx@meta.data), value = TRUE)
+
+# Set those columns to NULL
+PEBBLES_soupx@meta.data[, cols_to_null] <- NULL
+
 # Set up multithreading
 enableWGCNAThreads(nThreads = 16)
+allowWGCNAThreads(nThreads = 16)
 
-adult_postnatal <- subset(all.cortex.combined, subset = Age != 'E18')
 # Prepare Seurat Object for WGCNA
-metadata <- adult_postnatal@meta.data
+metadata <- PEBBLES_soupx@meta.data
 timepoint <- lapply(metadata$orig.ident, function(x) {
   split_name <- strsplit(x, "_")[[1]]
   return(split_name[3])
 })
-adult_postnatal@meta.data$Time_Point <- unlist(timepoint)
+PEBBLES_soupx@meta.data$Time_Point <- unlist(timepoint)
 
 genotype <- lapply(metadata$orig.ident, function(x) {
   split_name <- strsplit(x, "_")[[1]]
   return(split_name[1])
 })
-adult_postnatal@meta.data$genotype <- unlist(genotype)
+PEBBLES_soupx@meta.data$genotype <- unlist(genotype)
 
 
 # Preprocess
-adult_postnatal <- NormalizeData(adult_postnatal, normalization.method = "LogNormalize", scale.factor = 10000)
-all.genes <- rownames(adult_postnatal)
-adult_postnatal <- ScaleData(adult_postnatal)#, features = all.genes)
-adult_postnatal <- FindVariableFeatures(adult_postnatal, selection.method = "vst", nfeatures = 2000)
-adult_postnatal <- RunPCA(adult_postnatal, features = VariableFeatures(object = adult_postnatal))
-adult_postnatal <- RunUMAP(adult_postnatal, dims = 1:20)
-DimPlot(adult_postnatal, group.by='celltype.call', label=TRUE) +
+PEBBLES_soupx <- NormalizeData(PEBBLES_soupx, normalization.method = "LogNormalize", scale.factor = 10000)
+all.genes <- rownames(PEBBLES_soupx)
+PEBBLES_soupx <- ScaleData(PEBBLES_soupx)#, features = all.genes)
+PEBBLES_soupx <- FindVariableFeatures(PEBBLES_soupx, selection.method = "vst", nfeatures = 2000)
+PEBBLES_soupx <- RunPCA(PEBBLES_soupx, features = VariableFeatures(object = PEBBLES_soupx))
+PEBBLES_soupx <- RunUMAP(PEBBLES_soupx, dims = 1:20)
+DimPlot(PEBBLES_soupx, group.by='celltype.call', label=TRUE) +
   umap_theme() 
-DefaultAssay(adult_postnatal) <- 'RNA'
-Idents(adult_postnatal) <- 'celltype.call'
+DefaultAssay(PEBBLES_soupx) <- 'RNA'
+Idents(PEBBLES_soupx) <- 'celltype.call'
 # Set up Seurat object for WGCNA
-adult_postnatal <- SetupForWGCNA(
-  adult_postnatal,
+PEBBLES_soupx <- SetupForWGCNA(
+  PEBBLES_soupx,
   gene_select = "fraction", # the gene selection approach
-  fraction = 0.05, # fraction of cells that a gene needs to be expressed in order to be included
+  fraction = 0.1, # fraction of cells that a gene needs to be expressed in order to be included
   wgcna_name = "postnatal_mouse_cortex" # the name of the hdWGCNA experiment
 )
 
 # construct metacells  in each group
-adult_postnatal <- MetacellsByGroups(
-  adult_postnatal,
-  group.by = c("celltype.call", "Time_Point", "Sex", "genotype"), # specify the columns in adult_postnatal@meta.data to group by
+PEBBLES_soupx <- MetacellsByGroups(
+  PEBBLES_soupx,
+  group.by = c("cell_type", "Treatment"), # specify the columns in PEBBLES_soupx@meta.data to group by
   k = 25, # nearest-neighbors parameter
   max_shared = 10, # maximum number of shared cells between two metacells
-  ident.group = 'celltype.call' # set the Idents of the metacell seurat object
+  ident.group = 'cell_type' # set the Idents of the metacell seurat object
 )
 
 # normalize metacell expression matrix:
-adult_postnatal <- NormalizeMetacells(adult_postnatal)
-Idents(adult_postnatal) <- "celltype.call"
+PEBBLES_soupx <- NormalizeMetacells(seurat_obj = PEBBLES_soupx, wgcna_name = "postnatal_mouse_cortex",)
+Idents(PEBBLES_soupx) <- "cell_type"
 # Set up the expression matrix
-adult_postnatal <- SetDatExpr(
-  adult_postnatal,
-  group_name = c("L2_3_IT", "L4", "L5", "L6", "Sst", "Pvalb", "Vip", "Sncg", "Non-neuronal", "Astro", "Oligo", "Lamp5"), # the name of the group of interest in the group.by column
-  group.by="celltype.call", # the metadata column containing the cell type info. This same column should have also been used in MetacellsByGroups
+PEBBLES_soupx <- SetDatExpr(
+  PEBBLES_soupx,
+  group_name = c("L2_3_IT", "L4", "L5", "L6", "Sst", "Pvalb", "Vip", "Non-neuronal", "Astro", "Oligo", "Lamp5"), # the name of the group of interest in the group.by column
+  group.by="cell_type", # the metadata column containing the cell type info. This same column should have also been used in MetacellsByGroups
   assay = 'RNA', # using RNA assay
   slot = 'data' # using normalized data
 )
 
 # Test different soft powers:
-adult_postnatal <- TestSoftPowers(
-  adult_postnatal,
+PEBBLES_soupx <- TestSoftPowers(
+  PEBBLES_soupx,
   networkType = 'signed' # you can also use "unsigned" or "signed hybrid"
 )
 
 # plot the results:
-plot_list <- PlotSoftPowers(adult_postnatal)
+plot_list <- PlotSoftPowers(PEBBLES_soupx)
 
 # assemble with patchwork
 wrap_plots(plot_list, ncol=2)
@@ -96,40 +101,40 @@ ggplot2::ggsave("Softpowerthreshold.pdf",
                 height = 8.5,
                 width = 12)
 # construct co-expression network:
-adult_postnatal <- ConstructNetwork(
-  adult_postnatal, soft_power=8,
+PEBBLES_soupx <- ConstructNetwork(
+  PEBBLES_soupx, soft_power=8,
   setDatExpr=FALSE,
   overwrite_tom = TRUE# name of the topoligical overlap matrix written to disk
 )
 
-PlotDendrogram(adult_postnatal, main='hdWGCNA Dendrogram')
+PlotDendrogram(PEBBLES_soupx, main='hdWGCNA Dendrogram')
 ggplot2::ggsave("WGCNA_Dendrogram.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
 # need to run ScaleData first or else harmony throws an error:
-adult_postnatal <- ScaleData(adult_postnatal, features=VariableFeatures(adult_postnatal))
+PEBBLES_soupx <- ScaleData(PEBBLES_soupx, features=VariableFeatures(PEBBLES_soupx))
 
 # compute all MEs in the full single-cell dataset
-adult_postnatal <- ModuleEigengenes(
-  adult_postnatal,
+PEBBLES_soupx <- ModuleEigengenes(
+  PEBBLES_soupx,
   group.by.vars="orig.ident"
 )
 
 # harmonized module eigengenes:
-hMEs <- GetMEs(adult_postnatal)
+hMEs <- GetMEs(PEBBLES_soupx)
 
 # module eigengenes:
-MEs <- GetMEs(adult_postnatal, harmonized=FALSE)
+MEs <- GetMEs(PEBBLES_soupx, harmonized=FALSE)
 
 # compute eigengene-based connectivity (kME):
-adult_postnatal <- ModuleConnectivity(
-  adult_postnatal,
+PEBBLES_soupx <- ModuleConnectivity(
+  PEBBLES_soupx,
   group.by = 'celltype.call', group_name = c("L2_3_IT", "L4", "L5", "L6", "Sst", "Pvalb", "Vip", "Sncg", "Non-neuronal", "Astro", "Oligo", "Lamp5")
 )
 
 # plot genes ranked by kME for each module
-p <- PlotKMEs(adult_postnatal, ncol=5)
+p <- PlotKMEs(PEBBLES_soupx, ncol=5)
 
 p
 ggplot2::ggsave("kME.pdf",
@@ -138,8 +143,8 @@ ggplot2::ggsave("kME.pdf",
                 width = 12)
 # compute gene scoring for the top 25 hub genes by kME for each module
 # with Seurat method
-adult_postnatal <- ModuleExprScore(
-  adult_postnatal,
+PEBBLES_soupx <- ModuleExprScore(
+  PEBBLES_soupx,
   n_genes = 25,
   method='Seurat'
 )
@@ -147,15 +152,15 @@ adult_postnatal <- ModuleExprScore(
 # compute gene scoring for the top 25 hub genes by kME for each module
 # with UCell method
 library(UCell)
-adult_postnatal <- ModuleExprScore(
-  adult_postnatal,
+PEBBLES_soupx <- ModuleExprScore(
+  PEBBLES_soupx,
   n_genes = 25,
   method='UCell'
 )
 
 # make a featureplot of hMEs for each module
 plot_list <- ModuleFeaturePlot(
-  adult_postnatal,
+  PEBBLES_soupx,
   features='hMEs', # plot the hMEs
   order=TRUE # order so the points with highest hMEs are on top
 )
@@ -167,15 +172,15 @@ ggplot2::ggsave("module_UMAPs.pdf",
                 height = 8.5,
                 width = 12)
 
-levels(adult_postnatal) <- c("L2_3_IT", "L4", "L5", "L6","Pvalb", "Vip", "Sst","Sncg","Lamp5","Peri", "Endo", "Oligo","Astro","Non-neuronal")
-DimPlot_scCustom(seurat_object = adult_postnatal, label = FALSE, pt.size = 0.5)
+levels(PEBBLES_soupx) <- c("L2_3_IT", "L4", "L5", "L6","Pvalb", "Vip", "Sst","Sncg","Lamp5","Peri", "Endo", "Oligo","Astro","Non-neuronal")
+DimPlot_scCustom(seurat_object = PEBBLES_soupx, label = FALSE, pt.size = 0.5)
 ggplot2::ggsave("celltype_UMAPs.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
 # make a featureplot of hub scores for each module
 plot_list <- ModuleFeaturePlot(
-  adult_postnatal,
+  PEBBLES_soupx,
   features='scores', # plot the hub gene scores
   order='shuffle', # order so cells are shuffled
   ucell = TRUE) # depending on Seurat vs UCell for gene scoring
@@ -188,20 +193,20 @@ ggplot2::ggsave("hubgene_scores_UMAPs.pdf",
                 height = 8.5,
                 width = 12)
 # plot module correlagram
-ModuleCorrelogram(adult_postnatal)
+ModuleCorrelogram(PEBBLES_soupx)
 ggplot2::ggsave("module_to_module_cor.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
 
 # get hMEs from seurat object
-MEs <- GetMEs(adult_postnatal, harmonized=TRUE)
+MEs <- GetMEs(PEBBLES_soupx, harmonized=TRUE)
 mods <- colnames(MEs); mods <- mods[mods != 'grey']
 
 # add hMEs to Seurat meta-data:
-adult_postnatal@meta.data <- cbind(adult_postnatal@meta.data, MEs)
+PEBBLES_soupx@meta.data <- cbind(PEBBLES_soupx@meta.data, MEs)
 # plot with Seurat's DotPlot function
-DotPlot_scCustom(seurat_object = adult_postnatal, features=mods, flip_axes = TRUE, x_lab_rotate = TRUE, remove_axis_titles = FALSE) + xlab("Modules") + ylab("Cell_Type")
+DotPlot_scCustom(seurat_object = PEBBLES_soupx, features=mods, flip_axes = TRUE, x_lab_rotate = TRUE, remove_axis_titles = FALSE) + xlab("Modules") + ylab("Cell_Type")
 ggplot2::ggsave("Average_expression_hubgenes.pdf",
                 device = NULL,
                 height = 8.5,
@@ -209,35 +214,35 @@ ggplot2::ggsave("Average_expression_hubgenes.pdf",
 
 ## Compute Correlations
 # convert genotype to factor
-adult_postnatal$Genotype <- as.factor(adult_postnatal$genotype)
+PEBBLES_soupx$Genotype <- as.factor(PEBBLES_soupx$genotype)
 # convert time point to factor
-adult_postnatal$Time_Point <- as.factor(adult_postnatal$Time_Point)
+PEBBLES_soupx$Time_Point <- as.factor(PEBBLES_soupx$Time_Point)
 # convert celltype to factor
-adult_postnatal$celltype.call <- as.factor(adult_postnatal$celltype.call)
+PEBBLES_soupx$celltype.call <- as.factor(PEBBLES_soupx$celltype.call)
 # convert sample name to factor
-adult_postnatal$orig.ident <- as.factor(adult_postnatal$orig.ident)
+PEBBLES_soupx$orig.ident <- as.factor(PEBBLES_soupx$orig.ident)
 # convert sex to factor
-adult_postnatal$Sex <- as.factor(adult_postnatal$Sex)
+PEBBLES_soupx$Sex <- as.factor(PEBBLES_soupx$Sex)
 # convert sex to factor
-adult_postnatal$Disease_score <- as.numeric(adult_postnatal$Disease_score)
+PEBBLES_soupx$Disease_score <- as.numeric(PEBBLES_soupx$Disease_score)
 # convert bodyweight to factor
-adult_postnatal$Body_weight <- as.numeric(adult_postnatal$Body_weight)
+PEBBLES_soupx$Body_weight <- as.numeric(PEBBLES_soupx$Body_weight)
 
 # list of traits to correlate
 cur_traits <- c('Sex','Time_Point','Genotype', 'Disease_score', 'Body_weight')
 
-adult_postnatal <- ModuleTraitCorrelation(
-  adult_postnatal,
+PEBBLES_soupx <- ModuleTraitCorrelation(
+  PEBBLES_soupx,
   traits = cur_traits,
   group.by='celltype.call'
 )
 
 # get the mt-correlation results
-mt_cor <- GetModuleTraitCorrelation(adult_postnatal)
+mt_cor <- GetModuleTraitCorrelation(PEBBLES_soupx)
 
 names(mt_cor$cor)
 PlotModuleTraitCorrelation(
-  adult_postnatal,
+  PEBBLES_soupx,
   label = 'fdr',
   label_symbol = 'stars',
   text_size = 4,
@@ -251,20 +256,20 @@ PlotModuleTraitCorrelation(
 )
 
 #Warning messages:
-#1: In ModuleTraitCorrelation(adult_postnatal, traits = cur_traits,  :Trait Sex is a factor with levels Female, Male. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
-#2: In ModuleTraitCorrelation(adult_postnatal, traits = cur_traits,  :Trait Time_Point is a factor with levels P30, P60, P120, P150. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
-#3: In ModuleTraitCorrelation(adult_postnatal, traits = cur_traits,  :Trait Genotype is a factor with levels MUT, WT. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
-#4: In ModuleTraitCorrelation(adult_postnatal, traits = cur_traits,  :Trait disease_score is a factor with levels 0, 0.5, 1, 2, 3.5, 5. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
-#5: In ModuleTraitCorrelation(adult_postnatal, traits = cur_traits,  :Trait body_weight is a factor with levels 22, 24, 25, 29, 30, 35, 38, 45, 47, 50. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
+#1: In ModuleTraitCorrelation(PEBBLES_soupx, traits = cur_traits,  :Trait Sex is a factor with levels Female, Male. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
+#2: In ModuleTraitCorrelation(PEBBLES_soupx, traits = cur_traits,  :Trait Time_Point is a factor with levels P30, P60, P120, P150. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
+#3: In ModuleTraitCorrelation(PEBBLES_soupx, traits = cur_traits,  :Trait Genotype is a factor with levels MUT, WT. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
+#4: In ModuleTraitCorrelation(PEBBLES_soupx, traits = cur_traits,  :Trait disease_score is a factor with levels 0, 0.5, 1, 2, 3.5, 5. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
+#5: In ModuleTraitCorrelation(PEBBLES_soupx, traits = cur_traits,  :Trait body_weight is a factor with levels 22, 24, 25, 29, 30, 35, 38, 45, 47, 50. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
 
 mod_trait_cor <- mt_cor$cor
                                                                                            
 # get modules
-modules <- GetModules(adult_postnatal)
+modules <- GetModules(PEBBLES_soupx)
 head(modules)
 write.csv(modules, "modules.csv", row.names = FALSE)
 # get hub genes
-hub_genesdf <- GetHubGenes(adult_postnatal, n_hubs = 10)
+hub_genesdf <- GetHubGenes(PEBBLES_soupx, n_hubs = 10)
 head(hub_genesdf)
 write.csv(hub_genesdf, "top10_hub_genes.csv", row.names = FALSE)
 
