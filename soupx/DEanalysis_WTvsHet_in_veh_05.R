@@ -158,8 +158,8 @@ polychrome_palette <- c("#5A5156FF","#E4E1E3FF","#F6222EFF","#FE00FAFF","#16FF32
 load("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/soupx/DEanalysis_WTvsVeh_in_PCB_01.RData")
 s.obj = s.obj #change this to the name of the Seurat object you started with
 
-dir.create("WTvsHET_in_PCBs")
-setwd("WTvsHET_in_PCBs")
+dir.create("WTvsHET_in_Vehicle")
+setwd("WTvsHET_in_Vehicle")
 
 ##############################
 ## DEG and Pathway Analysis ##
