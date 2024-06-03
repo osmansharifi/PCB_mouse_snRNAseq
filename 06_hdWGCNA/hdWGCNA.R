@@ -15,16 +15,8 @@ theme_set(theme_cowplot())
 set.seed(1234)
 
 # load the snRNA-seq dataset
-load("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/soupx/PEBBLES_soupx_labeled.RData")
 setwd("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/06_hdWGCNA")
-PEBBLES_soupx$cell_type = PEBBLES_soupx$predicted.id
-
-# Select columns that do not start with 'predicted' or start with 'predicted.id'
-# Find columns starting with 'prediction' or 'RNA'
-cols_to_null <- grep("^prediction|^RNA", names(PEBBLES_soupx@meta.data), value = TRUE)
-
-# Set those columns to NULL
-PEBBLES_soupx@meta.data[, cols_to_null] <- NULL
+load("PEBBLES_clean.RData")
 
 # Set up multithreading
 enableWGCNAThreads(nThreads = 16)
@@ -52,34 +44,35 @@ PEBBLES_soupx <- ScaleData(PEBBLES_soupx)#, features = all.genes)
 PEBBLES_soupx <- FindVariableFeatures(PEBBLES_soupx, selection.method = "vst", nfeatures = 2000)
 PEBBLES_soupx <- RunPCA(PEBBLES_soupx, features = VariableFeatures(object = PEBBLES_soupx))
 PEBBLES_soupx <- RunUMAP(PEBBLES_soupx, dims = 1:20)
-DimPlot(PEBBLES_soupx, group.by='celltype.call', label=TRUE) +
+DimPlot(PEBBLES_soupx, group.by='cell_type', label=TRUE) +
   umap_theme() 
 DefaultAssay(PEBBLES_soupx) <- 'RNA'
-Idents(PEBBLES_soupx) <- 'celltype.call'
+Idents(PEBBLES_soupx) <- 'cell_type'
 # Set up Seurat object for WGCNA
 PEBBLES_soupx <- SetupForWGCNA(
   PEBBLES_soupx,
   gene_select = "fraction", # the gene selection approach
-  fraction = 0.1, # fraction of cells that a gene needs to be expressed in order to be included
-  wgcna_name = "postnatal_mouse_cortex" # the name of the hdWGCNA experiment
+  fraction = 0.15, # fraction of cells that a gene needs to be expressed in order to be included
+  wgcna_name = "pebbles_cortex_hdwgcna" # the name of the hdWGCNA experiment
 )
 
 # construct metacells  in each group
 PEBBLES_soupx <- MetacellsByGroups(
   PEBBLES_soupx,
-  group.by = c("cell_type", "Treatment"), # specify the columns in PEBBLES_soupx@meta.data to group by
+  group.by = c("cell_type", "Group"), # specify the columns in PEBBLES_soupx@meta.data to group by
+  wgcna_name = 'pebbles_cortex_hdwgcna', 
   k = 25, # nearest-neighbors parameter
   max_shared = 10, # maximum number of shared cells between two metacells
   ident.group = 'cell_type' # set the Idents of the metacell seurat object
 )
 
 # normalize metacell expression matrix:
-PEBBLES_soupx <- NormalizeMetacells(seurat_obj = PEBBLES_soupx, wgcna_name = "postnatal_mouse_cortex",)
+PEBBLES_soupx <- NormalizeMetacells(seurat_obj = PEBBLES_soupx, wgcna_name = "pebbles_cortex_hdwgcna",)
 Idents(PEBBLES_soupx) <- "cell_type"
 # Set up the expression matrix
 PEBBLES_soupx <- SetDatExpr(
   PEBBLES_soupx,
-  group_name = c("L2_3_IT", "L4", "L5", "L6", "Sst", "Pvalb", "Vip", "Non-neuronal", "Astro", "Oligo", "Lamp5"), # the name of the group of interest in the group.by column
+  group_name = c("L2_3_IT", "L4", "L5", "L6", "Sst", "Pvalb", "Vip", "Non-neuronal", "Astro", "Oligo", "Lamp5", "Sncg"), # the name of the group of interest in the group.by column
   group.by="cell_type", # the metadata column containing the cell type info. This same column should have also been used in MetacellsByGroups
   assay = 'RNA', # using RNA assay
   slot = 'data' # using normalized data
@@ -89,7 +82,7 @@ PEBBLES_soupx <- SetDatExpr(
 PEBBLES_soupx <- TestSoftPowers(
   PEBBLES_soupx,
   networkType = 'signed' # you can also use "unsigned" or "signed hybrid"
-)
+) # this errors out if there are columns that are constant and dont change 
 
 # plot the results:
 plot_list <- PlotSoftPowers(PEBBLES_soupx)
@@ -102,25 +95,31 @@ ggplot2::ggsave("Softpowerthreshold.pdf",
                 width = 12)
 # construct co-expression network:
 PEBBLES_soupx <- ConstructNetwork(
-  PEBBLES_soupx, soft_power=8,
+  PEBBLES_soupx, soft_power=5,
   setDatExpr=FALSE,
   overwrite_tom = TRUE# name of the topoligical overlap matrix written to disk
 )
 
-PlotDendrogram(PEBBLES_soupx, main='hdWGCNA Dendrogram')
+PlotDendrogram(PEBBLES_soupx, main='hdWGCNA PEBBLES Dendrogram')
 ggplot2::ggsave("WGCNA_Dendrogram.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
+
+PEBBLES_soupx@misc$pebbles_cortex_hdwgcna$wgcna_modules$module <- paste0(PEBBLES_soupx@misc$pebbles_cortex_hdwgcna$wgcna_modules$module, "_")
 # need to run ScaleData first or else harmony throws an error:
 PEBBLES_soupx <- ScaleData(PEBBLES_soupx, features=VariableFeatures(PEBBLES_soupx))
 
 # compute all MEs in the full single-cell dataset
 PEBBLES_soupx <- ModuleEigengenes(
   PEBBLES_soupx,
-  group.by.vars="orig.ident"
+  group.by.vars="Group",
+  wgcna_name = "pebbles_cortex_hdwgcna",
+  verbose = TRUE,
+  pc_dim = c(1:20)
 )
-
+PEBBLES_soupx <- ModuleEigengenes(
+  PEBBLES_soupx)
 # harmonized module eigengenes:
 hMEs <- GetMEs(PEBBLES_soupx)
 
@@ -130,7 +129,7 @@ MEs <- GetMEs(PEBBLES_soupx, harmonized=FALSE)
 # compute eigengene-based connectivity (kME):
 PEBBLES_soupx <- ModuleConnectivity(
   PEBBLES_soupx,
-  group.by = 'celltype.call', group_name = c("L2_3_IT", "L4", "L5", "L6", "Sst", "Pvalb", "Vip", "Sncg", "Non-neuronal", "Astro", "Oligo", "Lamp5")
+  group.by = 'cell_type', group_name = c("L2_3_IT", "L4", "L5", "L6", "Sst", "Pvalb", "Vip", "Sncg", "Non-neuronal", "Astro", "Oligo", "Lamp5")
 )
 
 # plot genes ranked by kME for each module
