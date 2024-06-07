@@ -7,6 +7,7 @@ library(patchwork)
 library(WGCNA)
 library(hdWGCNA)
 library(dplyr)
+library(UCell)
 
 # using the cowplot theme for ggplot
 theme_set(theme_cowplot())
@@ -19,7 +20,6 @@ setwd("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/06_hdWGCNA")
 load("PEBBLES_clean.RData")
 
 # Set up multithreading
-enableWGCNAThreads(nThreads = 16)
 allowWGCNAThreads(nThreads = 16)
 
 # Prepare Seurat Object for WGCNA
@@ -38,14 +38,6 @@ PEBBLES_soupx@meta.data$genotype <- unlist(genotype)
 
 
 # Preprocess
-PEBBLES_soupx <- NormalizeData(PEBBLES_soupx, normalization.method = "LogNormalize", scale.factor = 10000)
-all.genes <- rownames(PEBBLES_soupx)
-PEBBLES_soupx <- ScaleData(PEBBLES_soupx)#, features = all.genes)
-PEBBLES_soupx <- FindVariableFeatures(PEBBLES_soupx, selection.method = "vst", nfeatures = 2000)
-PEBBLES_soupx <- RunPCA(PEBBLES_soupx, features = VariableFeatures(object = PEBBLES_soupx))
-PEBBLES_soupx <- RunUMAP(PEBBLES_soupx, dims = 1:20)
-DimPlot(PEBBLES_soupx, group.by='cell_type', label=TRUE) +
-  umap_theme() 
 DefaultAssay(PEBBLES_soupx) <- 'RNA'
 Idents(PEBBLES_soupx) <- 'cell_type'
 # Set up Seurat object for WGCNA
@@ -59,7 +51,7 @@ PEBBLES_soupx <- SetupForWGCNA(
 # construct metacells  in each group
 PEBBLES_soupx <- MetacellsByGroups(
   PEBBLES_soupx,
-  group.by = c("cell_type", "Group"), # specify the columns in PEBBLES_soupx@meta.data to group by
+  group.by = c("cell_type"), # specify the columns in PEBBLES_soupx@meta.data to group by
   wgcna_name = 'pebbles_cortex_hdwgcna', 
   k = 25, # nearest-neighbors parameter
   max_shared = 10, # maximum number of shared cells between two metacells
@@ -106,7 +98,7 @@ ggplot2::ggsave("WGCNA_Dendrogram.pdf",
                 height = 8.5,
                 width = 12)
 
-PEBBLES_soupx@misc$pebbles_cortex_hdwgcna$wgcna_modules$module <- paste0(PEBBLES_soupx@misc$pebbles_cortex_hdwgcna$wgcna_modules$module, "_")
+#PEBBLES_soupx@misc$pebbles_cortex_hdwgcna$wgcna_modules$module <- paste0(PEBBLES_soupx@misc$pebbles_cortex_hdwgcna$wgcna_modules$module, "_")
 # need to run ScaleData first or else harmony throws an error:
 PEBBLES_soupx <- ScaleData(PEBBLES_soupx, features=VariableFeatures(PEBBLES_soupx))
 
@@ -133,10 +125,8 @@ PEBBLES_soupx <- ModuleConnectivity(
 )
 
 # plot genes ranked by kME for each module
-p <- PlotKMEs(PEBBLES_soupx, ncol=5)
-
-p
-ggplot2::ggsave("kME.pdf",
+PlotKMEs(PEBBLES_soupx, ncol=3)
+ggplot2::ggsave("PEBBLES_kME.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
@@ -150,7 +140,6 @@ PEBBLES_soupx <- ModuleExprScore(
 
 # compute gene scoring for the top 25 hub genes by kME for each module
 # with UCell method
-library(UCell)
 PEBBLES_soupx <- ModuleExprScore(
   PEBBLES_soupx,
   n_genes = 25,
@@ -166,13 +155,13 @@ plot_list <- ModuleFeaturePlot(
 
 # stitch together with patchwork
 wrap_plots(plot_list, ncol=3)
-ggplot2::ggsave("module_UMAPs.pdf",
+ggplot2::ggsave("PEBBLES_module_UMAPs.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
 
 levels(PEBBLES_soupx) <- c("L2_3_IT", "L4", "L5", "L6","Pvalb", "Vip", "Sst","Sncg","Lamp5","Peri", "Endo", "Oligo","Astro","Non-neuronal")
-DimPlot_scCustom(seurat_object = PEBBLES_soupx, label = FALSE, pt.size = 0.5)
+DimPlot_scCustom(seurat_object = PEBBLES_soupx, label = FALSE, pt.size = 0.5, figure_plot = TRUE)
 ggplot2::ggsave("celltype_UMAPs.pdf",
                 device = NULL,
                 height = 8.5,
@@ -187,13 +176,13 @@ plot_list <- ModuleFeaturePlot(
 
 # stitch together with patchwork
 wrap_plots(plot_list, ncol=3)
-ggplot2::ggsave("hubgene_scores_UMAPs.pdf",
+ggplot2::ggsave("PEBBLES_hubgene_scores_UMAPs.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
 # plot module correlagram
 ModuleCorrelogram(PEBBLES_soupx)
-ggplot2::ggsave("module_to_module_cor.pdf",
+ggplot2::ggsave("PEBBLES_module_to_module_cor.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
@@ -206,36 +195,69 @@ mods <- colnames(MEs); mods <- mods[mods != 'grey']
 PEBBLES_soupx@meta.data <- cbind(PEBBLES_soupx@meta.data, MEs)
 # plot with Seurat's DotPlot function
 DotPlot_scCustom(seurat_object = PEBBLES_soupx, features=mods, flip_axes = TRUE, x_lab_rotate = TRUE, remove_axis_titles = FALSE) + xlab("Modules") + ylab("Cell_Type")
-ggplot2::ggsave("Average_expression_hubgenes.pdf",
+ggplot2::ggsave("PEBBLES_Average_expression_hubgenes.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
 
-## Compute Correlations
-# convert genotype to factor
-PEBBLES_soupx$Genotype <- as.factor(PEBBLES_soupx$genotype)
-# convert time point to factor
-PEBBLES_soupx$Time_Point <- as.factor(PEBBLES_soupx$Time_Point)
-# convert celltype to factor
-PEBBLES_soupx$celltype.call <- as.factor(PEBBLES_soupx$celltype.call)
-# convert sample name to factor
-PEBBLES_soupx$orig.ident <- as.factor(PEBBLES_soupx$orig.ident)
-# convert sex to factor
-PEBBLES_soupx$Sex <- as.factor(PEBBLES_soupx$Sex)
-# convert sex to factor
-PEBBLES_soupx$Disease_score <- as.numeric(PEBBLES_soupx$Disease_score)
-# convert bodyweight to factor
-PEBBLES_soupx$Body_weight <- as.numeric(PEBBLES_soupx$Body_weight)
+################################
+## Add Traits to the metadata ##
+################################
+traits_sheet <- read.table("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/06_hdWGCNA/PEBBLES_traits.csv", sep = ",", header = TRUE)
+traits_sheet$X.1 <- NULL
+traits_sheet$X <- NULL
+traits_sheet$X.2 <- NULL
+traits_sheet$X.3 <- NULL
+traits_sheet$X.4 <- NULL
+traits_sheet$X.5 <- NULL
+
+# Get the sample names from the Seurat object
+sample_names <- PEBBLES_soupx@meta.data$Samples
+
+# Add the exposure, weight and pregnant columns from traits_sheet
+PEBBLES_soupx@meta.data$Exposure_duration <- NA
+PEBBLES_soupx@meta.data$Weight <- NA
+PEBBLES_soupx@meta.data$Pregnant <- NA
+# Match samples and fill in the data
+for (i in 1:length(sample_names)) {
+  sample_name <- sample_names[i]
+  row_index <- traits_sheet$Samples == sample_name
+  if (sum(row_index) != 0) {
+    PEBBLES_soupx@meta.data$Exposure_duration[i] <- traits_sheet$Exposure_duration[row_index]
+    PEBBLES_soupx@meta.data$Weight[i] <- traits_sheet$Weight[row_index]
+    PEBBLES_soupx@meta.data$Pregnant[i] <- traits_sheet$Pregnant[row_index]
+  }
+}
+
+##########################
+## Compute Correlations ##
+##########################
+# set as factor or numeric
+PEBBLES_soupx$Genotype <- as.factor(PEBBLES_soupx$Genotype)
+PEBBLES_soupx$Treatment <- as.factor(PEBBLES_soupx$Treatment)
+PEBBLES_soupx$Exposure_duration <- as.numeric(PEBBLES_soupx$Exposure_duration)
+PEBBLES_soupx$Weight <- as.numeric(PEBBLES_soupx$Weight)
+PEBBLES_soupx$Pregnant <- as.factor(PEBBLES_soupx$Pregnant)
+PEBBLES_soupx$Samples <- as.factor(PEBBLES_soupx$Samples)
 
 # list of traits to correlate
-cur_traits <- c('Sex','Time_Point','Genotype', 'Disease_score', 'Body_weight')
+cur_traits <- c('Genotype', 'Treatment', 'Exposure_duration', 'Weight', 'Pregnant')
 
 PEBBLES_soupx <- ModuleTraitCorrelation(
   PEBBLES_soupx,
   traits = cur_traits,
-  group.by='celltype.call'
+  group.by='cell_type'
 )
 
+#Warning messages:
+#  1: In ModuleTraitCorrelation(PEBBLES_soupx, traits = cur_traits, group.by = "cell_type") :
+#  Trait Samples is a factor with levels 24_PCB_WT, 25_VEHICLE_WT, 27_PCB_HET, 27_PCB_HET_2, 28_VEHICLE_HET, 29_VEHICLE_WT, 30_VEHICLE_WT, #30_VEHICLE_WT_2, 31_PCB_WT, 37_PCB_WT, 37_PCB_WT_2, 38_VEHICLE_HET, 39_PCB_HET, 40_VEHICLE_HET, 40_VEHICLE_HET_2. Levels will be converted to #numeric IN THIS ORDER for the correlation, is this the expected order?
+#  2: In ModuleTraitCorrelation(PEBBLES_soupx, traits = cur_traits, group.by = "cell_type") :
+#  Trait Genotype is a factor with levels HET, WT. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected #order?
+#  3: In ModuleTraitCorrelation(PEBBLES_soupx, traits = cur_traits, group.by = "cell_type") :
+#  Trait Treatment is a factor with levels PCB, VEHICLE. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the #expected order?
+#  4: In ModuleTraitCorrelation(PEBBLES_soupx, traits = cur_traits, group.by = "cell_type") :
+#  Trait Pregnant is a factor with levels No, Yes. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected #order?
 # get the mt-correlation results
 mt_cor <- GetModuleTraitCorrelation(PEBBLES_soupx)
 
@@ -244,22 +266,15 @@ PlotModuleTraitCorrelation(
   PEBBLES_soupx,
   label = 'fdr',
   label_symbol = 'stars',
-  text_size = 4,
+  text_size = 3,
   text_digits = 4,
   text_color = 'black',
   high_color = '#B2182B',
   mid_color = '#EEEEEE',
   low_color = '#2166AC',
-  plot_max = 0.4,
+  plot_max = 0.8,
   combine=TRUE
 )
-
-#Warning messages:
-#1: In ModuleTraitCorrelation(PEBBLES_soupx, traits = cur_traits,  :Trait Sex is a factor with levels Female, Male. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
-#2: In ModuleTraitCorrelation(PEBBLES_soupx, traits = cur_traits,  :Trait Time_Point is a factor with levels P30, P60, P120, P150. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
-#3: In ModuleTraitCorrelation(PEBBLES_soupx, traits = cur_traits,  :Trait Genotype is a factor with levels MUT, WT. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
-#4: In ModuleTraitCorrelation(PEBBLES_soupx, traits = cur_traits,  :Trait disease_score is a factor with levels 0, 0.5, 1, 2, 3.5, 5. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
-#5: In ModuleTraitCorrelation(PEBBLES_soupx, traits = cur_traits,  :Trait body_weight is a factor with levels 22, 24, 25, 29, 30, 35, 38, 45, 47, 50. Levels will be converted to numeric IN THIS ORDER for the correlation, is this the expected order?
 
 mod_trait_cor <- mt_cor$cor
                                                                                            
@@ -272,4 +287,4 @@ hub_genesdf <- GetHubGenes(PEBBLES_soupx, n_hubs = 10)
 head(hub_genesdf)
 write.csv(hub_genesdf, "top10_hub_genes.csv", row.names = FALSE)
 
-save(list = ls(), file = "mouse_cortex_WGCNA.RData")
+save(list = ls(), file = "PEBBLES_cortex_WGCNA.RData")
