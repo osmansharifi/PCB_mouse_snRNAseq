@@ -8,7 +8,8 @@ library(WGCNA)
 library(hdWGCNA)
 library(dplyr)
 library(UCell)
-
+library(magrittr)
+library(igraph)
 # using the cowplot theme for ggplot
 theme_set(theme_cowplot())
 
@@ -288,3 +289,51 @@ head(hub_genesdf)
 write.csv(hub_genesdf, "top10_hub_genes.csv", row.names = FALSE)
 
 save(list = ls(), file = "PEBBLES_cortex_WGCNA.RData")
+
+ModuleNetworkPlot(
+  PEBBLES_soupx,
+  outdir = 'ModuleNetworks'
+)
+
+# hubgene network
+HubGeneNetworkPlot(
+  PEBBLES_soupx,
+  n_hubs = 1, n_other=149,
+  edge_prop = 1,
+  mods = 'all',
+  edge.alpha = 0.5,
+  vertex.label.cex = 1,
+  hub.vertex.size = 6
+)
+
+g <- HubGeneNetworkPlot(PEBBLES_soupx,  return_graph=TRUE)
+
+seurat_obj <- RunModuleUMAP(
+  PEBBLES_soupx,
+  n_hubs = 10, # number of hub genes to include for the UMAP embedding
+  n_neighbors=15, # neighbors parameter for UMAP
+  min_dist=0.1 # min distance between points in UMAP space
+)
+
+# get the hub gene UMAP table from the seurat object
+umap_df <- GetModuleUMAP(PEBBLES_soupx)
+
+# plot with ggplot
+ggplot(umap_df, aes(x=UMAP1, y=UMAP2)) +
+  geom_point(
+    color=umap_df$color, # color each point by WGCNA module
+    size=umap_df$kME*2 # size of each point based on intramodular connectivity
+  ) +
+  umap_theme()
+
+ModuleUMAPPlot(
+  PEBBLES_soupx,
+  edge.alpha=0.25,
+  sample_edges=TRUE,
+  edge_prop=0.1, # proportion of edges to sample (20% here)
+  label_hubs=2 ,# how many hub genes to plot per module?
+  keep_grey_edges=FALSE
+)
+
+# Add a column for module names
+test <- cbind(mod_trait_cor$all_cells, mod_trait_cor$Astro)
