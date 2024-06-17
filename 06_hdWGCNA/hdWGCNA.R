@@ -369,3 +369,36 @@ ggplot2::ggsave("PEBBLES_top5_KEGG.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
+
+# compute cell-type marker genes with Seurat:
+Idents(PEBBLES_soupx) <- PEBBLES_soupx$cell_type
+markers <- Seurat::FindAllMarkers(
+  PEBBLES_soupx,
+  only.pos = TRUE,
+  logfc.threshold=1
+)
+
+# compute marker gene overlaps
+overlap_df <- OverlapModulesDEGs(
+  PEBBLES_soupx,
+  deg_df = markers,
+  fc_cutoff = 1 # log fold change cutoff for overlap analysis
+)
+# overlap barplot, produces a plot for each cell type
+plot_list <- OverlapBarPlot(overlap_df)
+
+# stitch plots with patchwork
+wrap_plots(plot_list, ncol=3)
+ggplot2::ggsave("PEBBLES_module_odds.ratio.pdf",
+                device = NULL,
+                height = 8.5,
+                width = 12)
+# plot odds ratio of the overlap as a dot plot
+OverlapDotPlot(
+  overlap_df,
+  plot_var = 'odds_ratio') +
+  ggtitle('Overlap of modules & cell-type markers')
+ggplot2::ggsave("PEBBLES_cellmarker_module_overlap.pdf",
+                device = NULL,
+                height = 8.5,
+                width = 12)
