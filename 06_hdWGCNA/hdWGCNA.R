@@ -337,3 +337,35 @@ ModuleUMAPPlot(
 
 # Add a column for module names
 test <- cbind(mod_trait_cor$all_cells, mod_trait_cor$Astro)
+
+dbs <- "KEGG_2019_Mouse"
+# perform enrichment tests
+PEBBLES_soupx <- RunEnrichr(
+  PEBBLES_soupx,
+  dbs="KEGG_2019_Mouse", # character vector of enrichr databases to test
+  max_genes = 100 # number of genes per module to test. use max_genes = Inf to choose all genes!
+)
+
+# retrieve the output table
+enrich_df <- GetEnrichrTable(PEBBLES_soupx)
+
+# make GO term plots:
+EnrichrBarPlot(
+  PEBBLES_soupx,
+  outdir = "enrichr_plots", # name of output directory
+  n_terms = 10, # number of enriched terms to show (sometimes more show if there are ties!!!)
+  plot_size = c(5,7), # width, height of the output .pdfs
+  logscale=TRUE # do you want to show the enrichment as a log scale?
+)
+
+# enrichr dotplot
+EnrichrDotPlot(
+  PEBBLES_soupx,
+  mods = "all", # use all modules (this is the default behavior)
+  database = dbs, # this has to be one of the lists we used above!!!
+  n_terms=5 # number of terms for each module
+)
+ggplot2::ggsave("PEBBLES_top5_KEGG.pdf",
+                device = NULL,
+                height = 8.5,
+                width = 12)
