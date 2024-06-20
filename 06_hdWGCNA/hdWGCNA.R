@@ -533,4 +533,16 @@ brown_cor <- data.frame(mt_cor$cor$Sst[,5:5])
 brown_fdr <- data.frame(mt_cor$fdr$Sst[,5:5])
 brown <- merge(brown_cor, brown_fdr, by = "row.names", all = TRUE)
 
+# Calculate the adjacency matrix
+adj_matrix <- GetAssayData(PEBBLES_soupx, slot = "counts")
+adj_matrix <- cor(adj_matrix, use = "complete.obs")
+adj_matrix <- adj_matrix^2
 
+# Calculate the dissimilarity matrix
+diss_matrix <- 1 - (abs(adj_matrix)) / (max(adj_matrix) - min(adj_matrix))
+
+# Perform SVD on the dissimilarity matrix
+pca_results <- svd(diss_matrix)
+
+# Calculate the proportion of variance explained by each principal component
+prop_var_explained <- propVarExplained(pca_results)
