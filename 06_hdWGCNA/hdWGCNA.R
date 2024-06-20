@@ -240,9 +240,10 @@ PEBBLES_soupx$Exposure_duration <- as.numeric(PEBBLES_soupx$Exposure_duration)
 PEBBLES_soupx$Weight <- as.numeric(PEBBLES_soupx$Weight)
 PEBBLES_soupx$Pregnant <- as.factor(PEBBLES_soupx$Pregnant)
 PEBBLES_soupx$Samples <- as.factor(PEBBLES_soupx$Samples)
-
+PEBBLES_soupx$Group <- paste(PEBBLES_soupx$Genotype, PEBBLES_soupx$Treatment, sep = "-")
+PEBBLES_soupx$Group <- as.factor(PEBBLES_soupx$Group)
 # list of traits to correlate
-cur_traits <- c('Genotype', 'Treatment', 'Exposure_duration', 'Weight', 'Pregnant')
+cur_traits <- c('Genotype', 'Treatment', 'Exposure_duration', 'Weight', 'Pregnant', 'Group')
 
 PEBBLES_soupx <- ModuleTraitCorrelation(
   PEBBLES_soupx,
@@ -402,3 +403,134 @@ ggplot2::ggsave("PEBBLES_cellmarker_module_overlap.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
+
+# Extract the relevant information from meta.data
+library(ggpubr)
+plot_data <- PEBBLES_soupx@meta.data[, c("Group", "brown", "Exposure_duration", "Weight", "Pregnant")]
+plot_data$Group <- factor(plot_data$Group, levels = c("WT-VEHICLE", "WT-PCB", "HET-VEHICLE", "HET-PCB"))
+p <- ggplot(plot_data, aes(x = Group, y = brown, fill = Pregnant)) +
+  geom_violin() +
+  labs(
+    title = "Violin Plot of Group vs brownE",
+    x = "Group",
+    y = "Module Eigengene"
+  ) +
+  theme_minimal() +
+  guides(shape = guide_legend(override.aes = list(size = 5))) +
+  labs(title = 'Module Trait correlation') +
+  theme(legend.position = "bottom") +
+  theme_bw(base_size = 10) +
+  theme(
+    legend.position = 'right',
+    legend.background = element_rect(),
+    plot.title = element_text(angle = 0, size = 18, face = 'bold', vjust = 1),
+    plot.subtitle = element_text(angle = 0, size = 14, face = 'bold', vjust = 1),
+    plot.caption = element_text(angle = 0, size = 14, face = 'bold', vjust = 1),
+    axis.text.x = element_text(angle = 90, size = 12, face = 'bold', hjust = 1.0, vjust = 0.5, colour = "black"),
+    axis.text.y = element_text(angle = 0, size = 8, face = 'plain', vjust = 0.5, colour = "black"),
+    axis.title = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.title.x = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.title.y = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.line = element_line(colour = 'black'),
+    legend.key = element_blank(),
+    # removes the border
+    legend.key.size = unit(1, "cm"),
+    # Sets overall area/size of the legend
+    legend.text = element_text(size = 18, face = "bold"),
+    # Text size
+    title = element_text(size = 18, face = "bold")
+  )
+p + stat_compare_means(
+  comparisons = list(c("HET-PCB", "WT-VEHICLE"), c("HET-VEHICLE", "WT-VEHICLE"), c("WT-PCB", "WT-VEHICLE")),
+  method = "t.test",
+  label = "p.format"
+)
+ggplot2::ggsave("PEBBLES_module_pregnant_corr.pdf",
+                device = NULL,
+                height = 8.5,
+                width = 12)
+
+p <- ggplot(plot_data, aes(x = Group, y = brown, fill = Exposure_duration)) +
+  geom_violin() +
+  theme_minimal() +
+  guides(shape = guide_legend(override.aes = list(size = 5))) +
+  labs(title = 'brown Module Trait correlation', y = "Module Eigengene") +
+  theme(legend.position = "bottom") +
+  theme_bw(base_size = 10) +
+  theme(
+    legend.position = 'right',
+    legend.background = element_rect(),
+    plot.title = element_text(angle = 0, size = 18, face = 'bold', vjust = 1),
+    plot.subtitle = element_text(angle = 0, size = 14, face = 'bold', vjust = 1),
+    plot.caption = element_text(angle = 0, size = 14, face = 'bold', vjust = 1),
+    axis.text.x = element_text(angle = 90, size = 12, face = 'bold', hjust = 1.0, vjust = 0.5, colour = "black"),
+    axis.text.y = element_text(angle = 0, size = 8, face = 'plain', vjust = 0.5, colour = "black"),
+    axis.title = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.title.x = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.title.y = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.line = element_line(colour = 'black'),
+    legend.key = element_blank(),
+    # removes the border
+    legend.key.size = unit(1, "cm"),
+    # Sets overall area/size of the legend
+    legend.text = element_text(size = 18, face = "bold"),
+    # Text size
+    title = element_text(size = 18, face = "bold")
+  )
+p + stat_compare_means(
+  comparisons = list(c("HET-PCB", "WT-VEHICLE"), c("HET-VEHICLE", "WT-VEHICLE"), c("WT-PCB", "WT-VEHICLE")),
+  method = "t.test",
+  label = "p.format"
+)
+ggplot2::ggsave("PEBBLES_module_ExposureDuration_corr.pdf",
+                device = NULL,
+                height = 8.5,
+                width = 12)
+
+p <- ggplot(plot_data, aes(x = Group, y = brown, fill = Pregnant)) +
+  geom_violin() +
+  labs(
+    title = "Violin Plot of Group vs brownE",
+    x = "Group",
+    y = "Module Eigengene"
+  ) +
+  theme_minimal() +
+  guides(shape = guide_legend(override.aes = list(size = 5))) +
+  labs(title = 'brown Module Trait correlation', y = "Module Eigengene") +
+  theme(legend.position = "bottom") +
+  theme_bw(base_size = 10) +
+  theme(
+    legend.position = 'right',
+    legend.background = element_rect(),
+    plot.title = element_text(angle = 0, size = 18, face = 'bold', vjust = 1),
+    plot.subtitle = element_text(angle = 0, size = 14, face = 'bold', vjust = 1),
+    plot.caption = element_text(angle = 0, size = 14, face = 'bold', vjust = 1),
+    axis.text.x = element_text(angle = 90, size = 12, face = 'bold', hjust = 1.0, vjust = 0.5, colour = "black"),
+    axis.text.y = element_text(angle = 0, size = 8, face = 'plain', vjust = 0.5, colour = "black"),
+    axis.title = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.title.x = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.title.y = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.line = element_line(colour = 'black'),
+    legend.key = element_blank(),
+    # removes the border
+    legend.key.size = unit(1, "cm"),
+    # Sets overall area/size of the legend
+    legend.text = element_text(size = 18, face = "bold"),
+    # Text size
+    title = element_text(size = 18, face = "bold")
+  )
+p + stat_compare_means(
+  comparisons = list(c("HET-PCB", "WT-VEHICLE"), c("HET-VEHICLE", "WT-VEHICLE"), c("WT-PCB", "WT-VEHICLE")),
+  method = "t.test",
+  label = "p.format"
+)
+ggplot2::ggsave("PEBBLES_module_pregnant_corr.pdf",
+                device = NULL,
+                height = 8.5,
+                width = 12)
+
+brown_cor <- data.frame(mt_cor$cor$Sst[,5:5])
+brown_fdr <- data.frame(mt_cor$fdr$Sst[,5:5])
+brown <- merge(brown_cor, brown_fdr, by = "row.names", all = TRUE)
+
+
