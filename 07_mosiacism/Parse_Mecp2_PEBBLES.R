@@ -15,17 +15,19 @@ load("../06_hdWGCNA/PEBBLES_clean.RData")
 #################################
 ## Prepare Mecp2 allele counts ##
 #################################
-# load libraries
-
-#Load data
-setwd("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/")
-load("../06_hdWGCNA/PEBBLES_clean.RData")
 counts_table <- read.table("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/PEBBLES_Mecp2_alles.txt", sep="\t", header=FALSE)
 #headers for the txt file
 names(counts_table) <- c("Barcode", "UMI", "WT", "MUT", "Body", "Sample")
 head(counts_table)
-
+#counts_table <- counts_table[grepl("WT", counts_table$Sample), ]
+counts_table <- counts_table[!duplicated(counts_table$Barcode), ]
+counts_table <- counts_table %>%
+  filter(!(grepl("WT", Sample) & MUT > 0))
 Mecp2_wt_mut_counts = counts_table
+
+##############################################
+## Integrate counts into the PEBBLES object ##
+##############################################
 # Adding body counts into WT or MUT counts
 new.counts.wt = sapply(1:nrow(Mecp2_wt_mut_counts), function(x) {
   ifelse(Mecp2_wt_mut_counts$Body[x]>0 & Mecp2_wt_mut_counts$WT[x]>0, 
@@ -88,16 +90,22 @@ rownames(PEBBLES_soupx@assays$RNA@counts) = c(rownames(PEBBLES_soupx@assays$RNA@
 
 # checking to make sure they are added
 PEBBLES_soupx@assays$RNA@counts[18611:18612, 1:5]
+PEBBLES_soupx@meta.data <- PEBBLES_soupx@meta.data %>%
+  mutate(Mecp2_allele = case_when(
+    WT_Mecp2 > 0 ~ "WT_Mecp2",
+    MUT_Mecp2 > 0 ~ "MUT_Mecp2",
+    TRUE ~ "Unparsed"
+  ))
 
-#E18 <- subset(x = PEBBLES_soupx, subset = orig.ident == c("MUT_F_E18_WB1", "MUT_F_E18_WB2", "WT_F_E18_WB1", "WT_F_E18_WB2"))
-PEBBLES_soupx <- NormalizeData(PEBBLES_soupx)
-PEBBLES_soupx <- ScaleData(PEBBLES_soupx)
-PEBBLES_soupx <- FindVariableFeatures(PEBBLES_soupx, selection.method = "vst", nfeatures = 3000)
-PEBBLES_soupx <- RunPCA(object = PEBBLES_soupx, verbose = FALSE)
-PEBBLES_soupx <- RunUMAP(object = PEBBLES_soupx, dims = 1:20, verbose = FALSE)
-PEBBLES_soupx <- FindNeighbors(object = PEBBLES_soupx, dims = 1:20, verbose = FALSE)
-PEBBLES_soupx <- FindClusters(object = PEBBLES_soupx, verbose = FALSE)
-DimPlot(object = PEBBLES_soupx, label = TRUE, group.by = 'celltype.call') + NoLegend() + ggtitle("sctransform")# saving new Seurat object
-FeaturePlot_scCustom(seurat_object = PEBBLES_soupx, features = 'WT_Mecp2')
-FeaturePlot_scCustom(seurat_object = PEBBLES_soupx, features = 'MUT_Mecp2')
-FeaturePlot_scCustom(seurat_object = PEBBLES_soupx, features = 'Mecp2-MUT', split.by = "Genotype",slot = 'counts')
+##########################
+## Plot the parsed data ##
+##########################
+FeaturePlot_scCustom(seurat_object = PEBBLES_soupx, features = c('WT_Mecp2','MUT_Mecp2'), split.by = "Genotype",slot = 'counts', pt.size = 0.7)
+ggplot2::ggsave("Mecp2_parsed_clean.pdf",
+                device = NULL,
+                height = 8.5,
+                width = 12)
+Idents(PEBBLES_soupx) <- "cell_type"
+DimPlot_scCustom(seurat_object = PEBBLES_soupx, split.by = "Mecp2_allele", pt.size = 0.7, order = TRUE)
+
+
