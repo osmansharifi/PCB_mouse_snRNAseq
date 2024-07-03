@@ -10,8 +10,8 @@ library(edgeR)
 ##################
 ## Load samples ##
 ##################
-base_path <- '/Users/osman/Documents/GitHub/snRNA-seq-pipeline/scripts/09_mosiacism_analysis/'
-load(glue('{base_path}/all.female.cortex.parsed.RData'))
+base_path <- '/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism'
+load(glue('{base_path}/PEBBLES_parsed.RData'))
 mosaic.cortex <- subset(x = all.female.cortex, subset = Condition == 'MUTANT')
 cluster <- subset(mosaic.cortex, idents = c("L2_3_IT", "L4", "L5", "L6","Pvalb", "Vip", "Sst","Sncg","Lamp5", "Oligo","Astro","Non-neuronal"))
 
