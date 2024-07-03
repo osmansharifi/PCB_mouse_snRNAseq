@@ -106,6 +106,14 @@ ggplot2::ggsave("Mecp2_parsed_clean.pdf",
                 height = 8.5,
                 width = 12)
 Idents(PEBBLES_soupx) <- "cell_type"
-DimPlot_scCustom(seurat_object = PEBBLES_soupx, split.by = "Mecp2_allele", pt.size = 0.7, order = TRUE)
+levels(PEBBLES_soupx) <- c("L2_3_IT", "L4", "L5", "L6","Pvalb", "Vip", "Sst","Sncg","Lamp5","Peri", "Endo", "Oligo","Astro","Non-neuronal")
+DimPlot_scCustom(seurat_object = PEBBLES_soupx, split.by = "Mecp2_allele", pt.size = 0.7, order = TRUE, label = FALSE)
+ggplot2::ggsave("Mecp2_parsed_celltype.pdf",
+                device = NULL,
+                height = 8.5,
+                width = 12)
 
-
+##############################
+## Save the precious object ##
+##############################
+save(PEBBLES_soupx, file = glue('PEBBLES_parsed.RData'))
