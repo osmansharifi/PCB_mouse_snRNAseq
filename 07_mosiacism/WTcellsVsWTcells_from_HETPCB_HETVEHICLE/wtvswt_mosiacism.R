@@ -15,25 +15,9 @@ library(GeneOverlap)
 ##################
 ## Load samples ##
 ##################
-base_path <- '/Users/osman/Documents/GitHub/snRNA-seq-pipeline/scripts/09_mosiacism_analysis/'
-load(glue('{base_path}/all.female.cortex.parsed.RData'))
-mosaic.cortex <- subset(x = all.female.cortex, subset = Condition == 'MUTANT')
-cluster <- subset(mosaic.cortex, idents = c("L2_3_IT", "L4", "L5", "L6","Pvalb", "Vip", "Sst","Sncg","Lamp5", "Oligo","Astro","Non-neuronal"))
-
-# Create a new column called broad_class based on celltype.call
-all.female.cortex$broad_class <- ifelse(
-  all.female.cortex$celltype.call %in% c("Lamp5", "Pvalb", "Sncg", "Sst", "Vip"), 
-  "GABAergic", 
-  ifelse(
-    all.female.cortex$celltype.call %in% c("L2_3_IT", "L4", "L5", "L6"), 
-    "Glutamatergic", 
-    ifelse(
-      all.female.cortex$celltype.call %in% c("Astro", "Non-neuronal", "Oligo"), 
-      "Non-neuronal", 
-      "Other"
-    )
-  )
-)
+base_path <- '/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/'
+load(glue('{base_path}/PEBBLES_parsed.RData'))
+mosaic.cortex <- subset(x = PEBBLES_soupx, subset = Genotype == 'WT')
 
 # Perform DEG analysis between the WT cells from the WT mouse and WT cells from the mosaic brains
 cell_nonautonomous <- subset(x = all.female.cortex, subset = Mecp2_allele == 'Mecp2_WT')

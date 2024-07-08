@@ -97,6 +97,20 @@ PEBBLES_soupx@meta.data <- PEBBLES_soupx@meta.data %>%
     TRUE ~ "Unparsed"
   ))
 
+#create broad cell categories
+PEBBLES_soupx$broad_class <- ifelse(
+  PEBBLES_soupx$cell_type %in% c("Lamp5", "Pvalb", "Sncg", "Sst", "Vip"), 
+  "GABAergic", 
+  ifelse(
+    PEBBLES_soupx$cell_type %in% c("L2_3_IT", "L4", "L5", "L6"), 
+    "Glutamatergic", 
+    ifelse(
+      PEBBLES_soupx$cell_type %in% c("Astro", "Non-neuronal", "Oligo"), 
+      "Non-neuronal", 
+      "Other"
+    )
+  )
+)
 ##########################
 ## Plot the parsed data ##
 ##########################
@@ -116,4 +130,5 @@ ggplot2::ggsave("Mecp2_parsed_celltype.pdf",
 ##############################
 ## Save the precious object ##
 ##############################
+
 save(PEBBLES_soupx, file = glue('PEBBLES_parsed.RData'))
