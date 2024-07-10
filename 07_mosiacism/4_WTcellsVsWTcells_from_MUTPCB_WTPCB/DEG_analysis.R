@@ -21,12 +21,12 @@ load(glue('{base_path}/PEBBLES_parsed.RData'))
 mosaic.cortex <- subset(x = PEBBLES_soupx, subset = Treatment == 'PCB')
 
 # Perform DEG analysis between the WT cells from the WT mouse and WT cells from the mosaic brains
-#cell_nonautonomous <- subset(x = mosaic.cortex, subset = Mecp2_allele == 'WT_Mecp2')
-#WT_from_PCB = Cells(cell_nonautonomous)[which(cell_nonautonomous$Treatment == "PCB")]
-#WT_from_VEHICLE = Cells(cell_nonautonomous)[which(cell_nonautonomous$Treatment == "VEHICLE")]
-#slct_WT_from_PCB = sample(WT_from_PCB, size = 199)
-#slct_WT_from_VEHICLE = sample(WT_from_VEHICLE, size = 199)
-#subset_cell_nonautonomous = subset(cell_nonautonomous, cells = c(slct_WT_from_PCB, slct_WT_from_VEHICLE))
+cell_nonautonomous <- subset(x = mosaic.cortex, subset = Mecp2_allele == 'WT_Mecp2')
+WT_from_HET = Cells(cell_nonautonomous)[which(cell_nonautonomous$Genotype == "HET")]
+WT_from_WT = Cells(cell_nonautonomous)[which(cell_nonautonomous$Genotype == "WT")]
+slct_WT_from_HET = sample(WT_from_HET, size = 199)
+slct_WT_from_WT = sample(WT_from_WT, size = 199)
+subset_cell_nonautonomous = subset(cell_nonautonomous, cells = c(slct_WT_from_HET, slct_WT_from_WT))
 celltypes <- unique(mosaic.cortex@meta.data$broad_class)
 deg_results <- list()
 
@@ -71,7 +71,7 @@ for (celltype in celltypes) {
   # summary(decideTests(tmp))
 }
 
-top.table <- deg_results$GABAergic
+top.table <- deg_results$`Non-neuronal`
 top.table$Gene <- rownames(top.table)
 # Add necessary columns to the data frame
 top.table$diffexpressed <- 'NO'
@@ -95,7 +95,7 @@ top.table$delabel[top.table$Gene %in% top_upregulated_genes$Gene] <- top_upregul
 top.table$delabel[top.table$Gene %in% top_downregulated_genes$Gene] <- top_downregulated_genes$Gene
 
 # Get the directory name from the directory path
-directory_path = glue('{base_path}1_AllcellsVsAllcells_from_MUTPCB_WTPCB')
+directory_path = glue('{base_path}4_WTcellsVsWTcells_from_MUTPCB_WTPCB')
 dir_name <- basename(directory_path)
 
 # Volcano Plot
@@ -124,7 +124,7 @@ ggplot(data = top.table, aes(x = logFC, y = -log(adj.P.Val), col = diffexpressed
   ) +
   labs(title = paste("Volcano Plot -", dir_name),  # Update the plot title
        subtitle = paste("Upregulated:", num_upregulated, " | Downregulated:", num_downregulated))   # Add subtitle with counts
-ggplot2::ggsave(glue("{directory_path}/GABAergic_Volcano_{dir_name}.pdf"),
+ggplot2::ggsave(glue("{directory_path}/Non-neuronal_Volcano_{dir_name}.pdf"),
                 device = NULL,
                 height = 8.5,
                 width = 12)
