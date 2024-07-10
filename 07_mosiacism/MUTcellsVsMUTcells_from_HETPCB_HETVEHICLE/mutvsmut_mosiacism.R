@@ -20,13 +20,13 @@ base_path <- '/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/
 load(glue('{base_path}/PEBBLES_parsed.RData'))
 mosaic.cortex <- subset(x = PEBBLES_soupx, subset = Genotype == 'HET')
 
-# Perform DEG analysis between the WT cells from the WT mouse and WT cells from the mosaic brains
-cell_nonautonomous <- subset(x = mosaic.cortex, subset = Mecp2_allele == 'WT_Mecp2')
-WT_from_PCB = Cells(cell_nonautonomous)[which(cell_nonautonomous$Treatment == "PCB")]
-WT_from_VEHICLE = Cells(cell_nonautonomous)[which(cell_nonautonomous$Treatment == "VEHICLE")]
-slct_WT_from_PCB = sample(WT_from_PCB, size = 199)
-slct_WT_from_VEHICLE = sample(WT_from_VEHICLE, size = 199)
-subset_cell_nonautonomous = subset(cell_nonautonomous, cells = c(slct_WT_from_PCB, slct_WT_from_VEHICLE))
+# Perform DEG analysis between the MUT cells from the MUT mouse and MUT cells from the mosaic brains
+cell_nonautonomous <- subset(x = mosaic.cortex, subset = Mecp2_allele == 'MUT_Mecp2')
+MUT_from_PCB = Cells(cell_nonautonomous)[which(cell_nonautonomous$Treatment == "PCB")]
+MUT_from_VEHICLE = Cells(cell_nonautonomous)[which(cell_nonautonomous$Treatment == "VEHICLE")]
+slct_MUT_from_PCB = sample(MUT_from_PCB, size = 407)
+slct_MUT_from_VEHICLE = sample(MUT_from_VEHICLE, size = 407)
+subset_cell_nonautonomous = subset(cell_nonautonomous, cells = c(slct_MUT_from_PCB, slct_MUT_from_VEHICLE))
 celltypes <- unique(subset_cell_nonautonomous@meta.data$broad_class)
 deg_results <- list()
 
@@ -71,7 +71,7 @@ for (celltype in celltypes) {
   # summary(decideTests(tmp))
 }
 
-top.table <- deg_results$`Non-neuronal`
+top.table <- deg_results$GABAergic
 top.table$Gene <- rownames(top.table)
 # Add necessary columns to the data frame
 top.table$diffexpressed <- 'NO'
@@ -95,7 +95,7 @@ top.table$delabel[top.table$Gene %in% top_upregulated_genes$Gene] <- top_upregul
 top.table$delabel[top.table$Gene %in% top_downregulated_genes$Gene] <- top_downregulated_genes$Gene
 
 # Get the directory name from the directory path
-directory_path = glue('{base_path}WTcellsVsWTcells_from_HETPCB_HETVEHICLE')
+directory_path = glue('{base_path}MUTcellsVsMUTcells_from_HETPCB_HETVEHICLE')
 dir_name <- basename(directory_path)
 
 # Volcano Plot
@@ -104,6 +104,7 @@ ggplot(data = top.table, aes(x = logFC, y = -log(adj.P.Val), col = diffexpressed
   theme_minimal() +
   geom_text_repel(max.overlaps = Inf) +
   scale_color_manual(values = c('blue', 'black', 'red')) +
+  #scale_color_manual(values = c('black')) +
   theme(
     text = element_text(size=16),
     legend.position = 'right',
@@ -124,7 +125,7 @@ ggplot(data = top.table, aes(x = logFC, y = -log(adj.P.Val), col = diffexpressed
   ) +
   labs(title = paste("Volcano Plot -", dir_name),  # Update the plot title
        subtitle = paste("Upregulated:", num_upregulated, " | Downregulated:", num_downregulated))   # Add subtitle with counts
-ggplot2::ggsave(glue("{directory_path}/Non-neuronal_Volcano_WTvsWT_HetPCBvshHetVEH.pdf"),
+ggplot2::ggsave(glue("{directory_path}/GABAergic_Volcano_MUTvsMUT_HetPCBvshHetVEH.pdf"),
                 device = NULL,
                 height = 8.5,
                 width = 12)
@@ -133,10 +134,10 @@ ggplot2::ggsave(glue("{directory_path}/Non-neuronal_Volcano_WTvsWT_HetPCBvshHetV
 deg_results$Glutamatergic$Cell_type <- "Glutamatergic"
 deg_results$GABAergic$Cell_type <- "GABAergic"
 deg_results$`Non-neuronal`$Cell_type <- "Non-neuronal"
-WTvsWT <- rbind(deg_results$Glutamatergic, deg_results$GABAergic, deg_results$`Non-neuronal`)
-WTvsWT$SYMBOL <- rownames(WTvsWT)
-WTvsWT_significant <- subset(WTvsWT, adj.P.Val <= 0.05)
-write.csv(WTvsWT_significant, file = glue('{directory_path}/sig_WTcellsVsWTcells_from_HETPCB_HETVEHICLE_DEGs.csv'))
+MUTvsMUT <- rbind(deg_results$Glutamatergic, deg_results$GABAergic, deg_results$`Non-neuronal`)
+MUTvsMUT$SYMBOL <- rownames(MUTvsMUT)
+MUTvsMUT_significant <- subset(MUTvsMUT, adj.P.Val <= 0.05)
+write.csv(MUTvsMUT_significant, file = glue('{directory_path}/sig_MUTcellsVsMUTcells_from_HETPCB_HETVEHICLE_DEGs.csv'))
 ###########################################
 ## Venn diagram of the overlapping genes ##
 ###########################################
@@ -149,7 +150,7 @@ intersection_all2 <- intersect(sig_genes_Non_neuronal,sig_genes_Glutamatergic)
 intersection_all3 <- intersect(intersection_all2,sig_genes_GABAergic)
 intersection_all4 <- intersect(sig_genes_Glutamatergic,sig_genes_GABAergic)
 # Create a Venn diagram
-pdf(glue("{directory_path}/venn_sig_WTcellsVsWTcells_from_HETPCB_HETVEHICLE_DEGs.pdf"))
+pdf(glue("{directory_path}/venn_sig_MUTcellsVsMUTcells_from_HETPCB_HETVEHICLE_DEGs.pdf"))
 temp <- venn.diagram(
   x = list(
     Glutamatergic = sig_genes_Glutamatergic,
@@ -157,7 +158,7 @@ temp <- venn.diagram(
     Non_neuronal = sig_genes_Non_neuronal
   ),
   category.names = c("Glutamatergic", "GABAergic", "Non-neuronal"),
-  main = 'sig_WTcellsVsWTcells_from_HETPCB_HETVEHICLE_DEGs ',
+  main = 'sig_MUTcellsVsMUTcells_from_HETPCB_HETVEHICLE_DEGs ',
   #filename = glue("{base_path}/broad_group_analysis/venn_glutamatergic.pdf"),
   filename = NULL,
   col = c('#E6B8BFFF', '#CC7A88FF', '#990F26FF'), 
