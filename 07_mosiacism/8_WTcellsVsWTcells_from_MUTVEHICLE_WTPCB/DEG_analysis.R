@@ -18,14 +18,14 @@ library(enrichR)
 ##################
 base_path <- '/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/'
 load(glue('{base_path}/PEBBLES_parsed.RData'))
-mosaic.cortex <- subset(x = PEBBLES_soupx, subset = Group == c('HET-PCB', 'WT-VEHICLE'))
+mosaic.cortex <- subset(x = PEBBLES_soupx, subset = Group == c('HET-VEHICLE', 'WT-VEHICLE'))
 
 # Perform DEG analysis between the WT cells from the WT mouse and WT cells from the mosaic brains
 cell_nonautonomous <- subset(x = mosaic.cortex, subset = Mecp2_allele == 'WT_Mecp2')
 WT_from_HET = Cells(cell_nonautonomous)[which(cell_nonautonomous$Genotype == "HET")]
 WT_from_WT = Cells(cell_nonautonomous)[which(cell_nonautonomous$Genotype == "WT")]
-slct_WT_from_HET = sample(WT_from_HET, size = 95)
-slct_WT_from_WT = sample(WT_from_WT, size = 95)
+slct_WT_from_HET = sample(WT_from_HET, size = 146)
+slct_WT_from_WT = sample(WT_from_WT, size = 146)
 subset_cell_nonautonomous = subset(cell_nonautonomous, cells = c(slct_WT_from_HET, slct_WT_from_WT))
 celltypes <- unique(mosaic.cortex@meta.data$broad_class)
 deg_results <- list()
@@ -95,7 +95,7 @@ top.table$delabel[top.table$Gene %in% top_upregulated_genes$Gene] <- top_upregul
 top.table$delabel[top.table$Gene %in% top_downregulated_genes$Gene] <- top_downregulated_genes$Gene
 
 # Get the directory name from the directory path
-directory_path = glue('{base_path}5_WTcellsVsWTcells_from_MUTPCB_WTVEHICLE')
+directory_path = glue('{base_path}8_WTcellsVsWTcells_from_MUTVEHICLE_WTPCB')
 dir_name <- basename(directory_path)
 
 # Volcano Plot
@@ -157,7 +157,7 @@ temp <- venn.diagram(
     Non_neuronal = sig_genes_Non_neuronal
   ),
   category.names = c("Glutamatergic", "GABAergic", "Non-neuronal"),
-  main = 'sig_WTcellsVsWTcells_from_HETPCB_HETVEHICLE_DEGs ',
+  main = 'sig_WTcellsVsWTcells_from_MUTVEHICLE_WTPCB_DEGs ',
   #filename = glue("{base_path}/broad_group_analysis/venn_glutamatergic.pdf"),
   filename = NULL,
   col = c('#E6B8BFFF', '#CC7A88FF', '#990F26FF'), 
