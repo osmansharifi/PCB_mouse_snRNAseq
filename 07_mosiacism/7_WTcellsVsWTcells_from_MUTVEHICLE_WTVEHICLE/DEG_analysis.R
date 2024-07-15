@@ -34,7 +34,7 @@ for (celltype in celltypes) {
   cat("Performing DEG analysis for", celltype, "\n")
   
   # Subset cells based on broad_class
-  broad_class_subset <- subset(mosaic.cortex, subset = broad_class == celltype)
+  broad_class_subset <- subset(subset_cell_nonautonomous, subset = broad_class == celltype)
   
   # Get expression info
   expr <- as.matrix(GetAssayData(broad_class_subset))
@@ -71,7 +71,7 @@ for (celltype in celltypes) {
   # summary(decideTests(tmp))
 }
 
-top.table <- deg_results$`Non-neuronal`
+top.table <- deg_results$GABAergic
 top.table$Gene <- rownames(top.table)
 # Add necessary columns to the data frame
 top.table$diffexpressed <- 'NO'
@@ -124,7 +124,7 @@ ggplot(data = top.table, aes(x = logFC, y = -log(adj.P.Val), col = diffexpressed
   ) +
   labs(title = paste("Volcano Plot -", dir_name),  # Update the plot title
        subtitle = paste("Upregulated:", num_upregulated, " | Downregulated:", num_downregulated))   # Add subtitle with counts
-ggplot2::ggsave(glue("{directory_path}/Non-neuronal_Volcano_{dir_name}.pdf"),
+ggplot2::ggsave(glue("{directory_path}/GABAergic_Volcano_{dir_name}.pdf"),
                 device = NULL,
                 height = 8.5,
                 width = 12)
@@ -157,7 +157,7 @@ temp <- venn.diagram(
     Non_neuronal = sig_genes_Non_neuronal
   ),
   category.names = c("Glutamatergic", "GABAergic", "Non-neuronal"),
-  main = 'sig_WTcellsVsWTcells_from_MUTVEHICLE_WTVEHICLE_DEGs ',
+  main = 'WTcellsVsWTcells_from_MUTVEHICLE_WTVEHICLE',
   #filename = glue("{base_path}/broad_group_analysis/venn_glutamatergic.pdf"),
   filename = NULL,
   col = c('#E6B8BFFF', '#CC7A88FF', '#990F26FF'), 
