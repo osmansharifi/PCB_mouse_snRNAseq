@@ -18,7 +18,7 @@ library(enrichR)
 ##################
 base_path <- '/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/'
 load(glue('{base_path}/PEBBLES_parsed.RData'))
-mosaic.cortex <- subset(x = PEBBLES_soupx, subset = Group == c('HET-VEHICLE', 'WT-VEHICLE'))
+mosaic.cortex <- subset(x = PEBBLES_soupx, subset = Group == c('HET-VEHICLE', 'WT-PCB'))
 
 # Perform DEG analysis between the WT cells from the WT mouse and WT cells from the mosaic brains
 cell_nonautonomous <- subset(x = mosaic.cortex, subset = Mecp2_allele == 'WT_Mecp2')
@@ -34,7 +34,7 @@ for (celltype in celltypes) {
   cat("Performing DEG analysis for", celltype, "\n")
   
   # Subset cells based on broad_class
-  broad_class_subset <- subset(mosaic.cortex, subset = broad_class == celltype)
+  broad_class_subset <- subset(subset_cell_nonautonomous, subset = broad_class == celltype)
   
   # Get expression info
   expr <- as.matrix(GetAssayData(broad_class_subset))
@@ -44,12 +44,12 @@ for (celltype in celltypes) {
   expr <- expr[-bad, ]
   
   logcpm <- cpm(expr, prior.count = 2, log = TRUE)
-  mm <- model.matrix(~0 + Genotype, data = broad_class_subset@meta.data)
+  mm <- model.matrix(~0 + Treatment, data = broad_class_subset@meta.data)
   y <- voom(expr, mm, plot = TRUE)
   fit <- lmFit(y, mm)
   
   # Extract DEG results
-  contrasts <- makeContrasts(c(GenotypeHET) - c(GenotypeWT), levels = colnames(coef(fit)))
+  contrasts <- makeContrasts(c(TreatmentPCB) - c(TreatmentVEHICLE), levels = colnames(coef(fit)))
   tmp <- contrasts.fit(fit, contrasts = contrasts)
   tmp <- eBayes(tmp)
   top_table <- topTable(tmp, sort.by = "M", n = Inf) # top 20 DE genes
@@ -71,7 +71,7 @@ for (celltype in celltypes) {
   # summary(decideTests(tmp))
 }
 
-top.table <- deg_results$GABAergic
+top.table <- deg_results$`Non-neuronal`
 top.table$Gene <- rownames(top.table)
 # Add necessary columns to the data frame
 top.table$diffexpressed <- 'NO'
@@ -124,7 +124,7 @@ ggplot(data = top.table, aes(x = logFC, y = -log(adj.P.Val), col = diffexpressed
   ) +
   labs(title = paste("Volcano Plot -", dir_name),  # Update the plot title
        subtitle = paste("Upregulated:", num_upregulated, " | Downregulated:", num_downregulated))   # Add subtitle with counts
-ggplot2::ggsave(glue("{directory_path}/GABAergic_Volcano_{dir_name}.pdf"),
+ggplot2::ggsave(glue("{directory_path}/Non-neuronal_Volcano_{dir_name}.pdf"),
                 device = NULL,
                 height = 8.5,
                 width = 12)
@@ -157,7 +157,7 @@ temp <- venn.diagram(
     Non_neuronal = sig_genes_Non_neuronal
   ),
   category.names = c("Glutamatergic", "GABAergic", "Non-neuronal"),
-  main = 'sig_WTcellsVsWTcells_from_MUTVEHICLE_WTPCB_DEGs ',
+  main = 'sig_WTcellsVsWTcells_from_MUTVEHICLE_WTPCB',
   #filename = glue("{base_path}/broad_group_analysis/venn_glutamatergic.pdf"),
   filename = NULL,
   col = c('#E6B8BFFF', '#CC7A88FF', '#990F26FF'), 
