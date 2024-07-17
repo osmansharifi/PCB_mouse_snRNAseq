@@ -34,7 +34,7 @@ for (celltype in celltypes) {
   cat("Performing DEG analysis for", celltype, "\n")
   
   # Subset cells based on broad_class
-  broad_class_subset <- subset(mosaic.cortex, subset = broad_class == celltype)
+  broad_class_subset <- subset(subset_cell_nonautonomous, subset = broad_class == celltype)
   
   # Get expression info
   expr <- as.matrix(GetAssayData(broad_class_subset))
@@ -71,7 +71,7 @@ for (celltype in celltypes) {
   # summary(decideTests(tmp))
 }
 
-top.table <- deg_results$GABAergic
+top.table <- deg_results$Glutamatergic
 top.table$Gene <- rownames(top.table)
 # Add necessary columns to the data frame
 top.table$diffexpressed <- 'NO'
@@ -103,6 +103,7 @@ ggplot(data = top.table, aes(x = logFC, y = -log(adj.P.Val), col = diffexpressed
   geom_point(size=2) +
   theme_minimal() +
   geom_text_repel(max.overlaps = Inf) +
+  #scale_color_manual(values = c('black')) +
   scale_color_manual(values = c('blue', 'black', 'red')) +
   theme(
     text = element_text(size=16),
@@ -124,7 +125,7 @@ ggplot(data = top.table, aes(x = logFC, y = -log(adj.P.Val), col = diffexpressed
   ) +
   labs(title = paste("Volcano Plot -", dir_name),  # Update the plot title
        subtitle = paste("Upregulated:", num_upregulated, " | Downregulated:", num_downregulated))   # Add subtitle with counts
-ggplot2::ggsave(glue("{directory_path}/GABAergic_Volcano_{dir_name}.pdf"),
+ggplot2::ggsave(glue("{directory_path}/Glutamatergic_Volcano_{dir_name}.pdf"),
                 device = NULL,
                 height = 8.5,
                 width = 12)

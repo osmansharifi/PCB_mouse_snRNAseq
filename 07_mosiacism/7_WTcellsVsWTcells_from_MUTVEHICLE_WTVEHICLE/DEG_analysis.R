@@ -71,7 +71,7 @@ for (celltype in celltypes) {
   # summary(decideTests(tmp))
 }
 
-top.table <- deg_results$GABAergic
+top.table <- deg_results$`Non-neuronal`
 top.table$Gene <- rownames(top.table)
 # Add necessary columns to the data frame
 top.table$diffexpressed <- 'NO'
@@ -124,7 +124,7 @@ ggplot(data = top.table, aes(x = logFC, y = -log(adj.P.Val), col = diffexpressed
   ) +
   labs(title = paste("Volcano Plot -", dir_name),  # Update the plot title
        subtitle = paste("Upregulated:", num_upregulated, " | Downregulated:", num_downregulated))   # Add subtitle with counts
-ggplot2::ggsave(glue("{directory_path}/GABAergic_Volcano_{dir_name}.pdf"),
+ggplot2::ggsave(glue("{directory_path}/Non-neuronal_Volcano_{dir_name}.pdf"),
                 device = NULL,
                 height = 8.5,
                 width = 12)

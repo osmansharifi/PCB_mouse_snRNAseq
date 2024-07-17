@@ -71,7 +71,7 @@ for (celltype in celltypes) {
   # summary(decideTests(tmp))
 }
 
-top.table <- deg_results$`Non-neuronal`
+top.table <- deg_results$Glutamatergic
 top.table$Gene <- rownames(top.table)
 # Add necessary columns to the data frame
 top.table$diffexpressed <- 'NO'
@@ -95,7 +95,7 @@ top.table$delabel[top.table$Gene %in% top_upregulated_genes$Gene] <- top_upregul
 top.table$delabel[top.table$Gene %in% top_downregulated_genes$Gene] <- top_downregulated_genes$Gene
 
 # Get the directory name from the directory path
-directory_path = glue('{base_path}WTcellsVsWTcells_from_HETPCB_HETVEHICLE')
+directory_path = glue('{base_path}9_WTcellsVsWTcells_from_HETPCB_HETVEHICLE')
 dir_name <- basename(directory_path)
 
 # Volcano Plot
@@ -124,7 +124,7 @@ ggplot(data = top.table, aes(x = logFC, y = -log(adj.P.Val), col = diffexpressed
   ) +
   labs(title = paste("Volcano Plot -", dir_name),  # Update the plot title
        subtitle = paste("Upregulated:", num_upregulated, " | Downregulated:", num_downregulated))   # Add subtitle with counts
-ggplot2::ggsave(glue("{directory_path}/Non-neuronal_Volcano_WTvsWT_HetPCBvshHetVEH.pdf"),
+ggplot2::ggsave(glue("{directory_path}/Glutamatergic_Volcano_WTvsWT_HetPCBvshHetVEH.pdf"),
                 device = NULL,
                 height = 8.5,
                 width = 12)
