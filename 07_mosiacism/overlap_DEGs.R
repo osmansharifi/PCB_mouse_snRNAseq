@@ -10,44 +10,36 @@ library(glue)
 library(scCustomize)
 library(edgeR)
 library(ggplot2)
+library(tidyr)
 library(ggrepel)
 library(GeneOverlap)
 library(enrichR)
 library(readr)
+library(stringr)
+library(UpSetR)
 ################
 ## load files ##
 ################
 # Set the working directory to the parent folder containing the subdirectories
 setwd("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/")
 
-# Get the list of directories
-exp1 <- read.csv("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/1_AllcellsVsAllcells_from_MUTPCB_WTPCB/sig_DEGs_1_AllcellsVsAllcells_from_MUTPCB_WTPCB.csv", header = TRUE)
-exp2 <- read.csv("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/2_AllcellsVsAllcells_from_MUTPCB_MUTVEHICLE/sig_DEGs_2_AllcellsVsAllcells_from_MUTPCB_MUTVEHICLE.csv", header = TRUE)
-exp3 <- read.csv("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/3_WTcellsVsWTcells_from_WTPCB_WTVEHICLE/sig_WTcellsVsWTcells_from_WTPCB_WTVEHICLE_DEGs.csv", header = TRUE)
-exp4 <- read.csv("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/4_WTcellsVsWTcells_from_MUTPCB_WTPCB/sig_DEGs_4_WTcellsVsWTcells_from_MUTPCB_WTPCB.csv", header = TRUE)
-exp5 <- read.csv("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/5_WTcellsVsWTcells_from_MUTPCB_WTVEHICLE/sig_DEGs_5_WTcellsVsWTcells_from_MUTPCB_WTVEHICLE.csv", header = TRUE)
-exp6 <- read.csv("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/6_AllcellsVsAllcells_from_MUTVEHICLE_WTVEHICLE/sig_DEGs_6_AllcellsVsAllcells_from_MUTVEHICLE_WTVEHICLE.csv", header = TRUE)
-exp7 <- read.csv("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/7_WTcellsVsWTcells_from_MUTVEHICLE_WTVEHICLE/sig_DEGs_7_WTcellsVsWTcells_from_MUTVEHICLE_WTVEHICLE.csv", header = TRUE)
-exp8 <- read.csv("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/8_WTcellsVsWTcells_from_MUTVEHICLE_WTPCB/sig_DEGs_8_WTcellsVsWTcells_from_MUTVEHICLE_WTPCB.csv", header = TRUE)
-exp9 <- read.csv("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/9_WTcellsVsWTcells_from_HETPCB_HETVEHICLE/sig_WTcellsVsWTcells_from_HETPCB_HETVEHICLE_DEGs.csv", header = TRUE)
-exp10 <- read.csv("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/10_MUTcellsVsMUTcells_from_HETPCB_HETVEHICLE/sig_MUTcellsVsMUTcells_from_HETPCB_HETVEHICLE_DEGs.csv", header = TRUE)
-exp11 <- read.csv("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/11_WTcellsVsMUTcells_from_MUTPCB_MUTVEHICLE/sig_DEGs_11_WTcellsVsMUTcells_from_MUTPCB_MUTVEHICLE.csv", header = TRUE)
-exp12 <- read.csv("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/12_MUTcellsVsWTcells_from_MUTPCB_MUTVEHICLE/sig_DEGs_12_MUTcellsVsWTcells_from_MUTPCB_MUTVEHICLE.csv", header = TRUE)
-
 # List of file paths
 file_paths <- c(
-  "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/1_AllcellsVsAllcells_from_MUTPCB_WTPCB/sig_DEGs_1_AllcellsVsAllcells_from_MUTPCB_WTPCB.csv",
-  "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/2_AllcellsVsAllcells_from_MUTPCB_MUTVEHICLE/sig_DEGs_2_AllcellsVsAllcells_from_MUTPCB_MUTVEHICLE.csv",
-  "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/3_WTcellsVsWTcells_from_WTPCB_WTVEHICLE/sig_WTcellsVsWTcells_from_WTPCB_WTVEHICLE_DEGs.csv",
-  "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/4_WTcellsVsWTcells_from_MUTPCB_WTPCB/sig_DEGs_4_WTcellsVsWTcells_from_MUTPCB_WTPCB.csv",
-  "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/5_WTcellsVsWTcells_from_MUTPCB_WTVEHICLE/sig_DEGs_5_WTcellsVsWTcells_from_MUTPCB_WTVEHICLE.csv",
-  "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/6_AllcellsVsAllcells_from_MUTVEHICLE_WTVEHICLE/sig_DEGs_6_AllcellsVsAllcells_from_MUTVEHICLE_WTVEHICLE.csv",
-  "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/7_WTcellsVsWTcells_from_MUTVEHICLE_WTVEHICLE/sig_DEGs_7_WTcellsVsWTcells_from_MUTVEHICLE_WTVEHICLE.csv",
-  "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/8_WTcellsVsWTcells_from_MUTVEHICLE_WTPCB/sig_DEGs_8_WTcellsVsWTcells_from_MUTVEHICLE_WTPCB.csv",
-  "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/9_WTcellsVsWTcells_from_HETPCB_HETVEHICLE/sig_WTcellsVsWTcells_from_HETPCB_HETVEHICLE_DEGs.csv",
-  "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/10_MUTcellsVsMUTcells_from_HETPCB_HETVEHICLE/sig_MUTcellsVsMUTcells_from_HETPCB_HETVEHICLE_DEGs.csv",
-  "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/11_WTcellsVsMUTcells_from_MUTPCB_MUTVEHICLE/sig_DEGs_11_WTcellsVsMUTcells_from_MUTPCB_MUTVEHICLE.csv",
-  "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/12_MUTcellsVsWTcells_from_MUTPCB_MUTVEHICLE/sig_DEGs_12_MUTcellsVsWTcells_from_MUTPCB_MUTVEHICLE.csv"
+  "1_AllcellsVsAllcells_from_MUTPCB_WTPCB/sig_DEGs_1_AllcellsVsAllcells_from_MUTPCB_WTPCB.csv",
+  "2_AllcellsVsAllcells_from_MUTPCB_MUTVEHICLE/sig_DEGs_2_AllcellsVsAllcells_from_MUTPCB_MUTVEHICLE.csv",
+  "3_WTcellsVsWTcells_from_WTPCB_WTVEHICLE/sig_DEGs_3_WTcellsVsWTcells_from_WTPCB_WTVEHICLE.csv",
+  "4_WTcellsVsWTcells_from_MUTPCB_WTPCB/sig_DEGs_4_WTcellsVsWTcells_from_MUTPCB_WTPCB.csv",
+  "5_WTcellsVsWTcells_from_MUTPCB_WTVEHICLE/sig_DEGs_5_WTcellsVsWTcells_from_MUTPCB_WTVEHICLE.csv",
+  "6_AllcellsVsAllcells_from_MUTVEHICLE_WTVEHICLE/sig_DEGs_6_AllcellsVsAllcells_from_MUTVEHICLE_WTVEHICLE.csv",
+  "7_WTcellsVsWTcells_from_MUTVEHICLE_WTVEHICLE/sig_DEGs_7_WTcellsVsWTcells_from_MUTVEHICLE_WTVEHICLE.csv",
+  "8_WTcellsVsWTcells_from_MUTVEHICLE_WTPCB/sig_DEGs_8_WTcellsVsWTcells_from_MUTVEHICLE_WTPCB.csv",
+  "9_WTcellsVsWTcells_from_HETPCB_HETVEHICLE/sig_DEGs_9_WTcellsVsWTcells_from_HETPCB_HETVEHICLE.csv",
+  "10_MUTcellsVsMUTcells_from_HETPCB_HETVEHICLE/sig_DEGs_10_MUTcellsVsMUTcells_from_HETPCB_HETVEHICLE.csv",
+  "11_WTcellsVsMUTcells_from_MUTPCB_MUTVEHICLE/sig_DEGs_11_WTcellsVsMUTcells_from_MUTPCB_MUTVEHICLE.csv",
+  "12_MUTcellsVsWTcells_from_MUTPCB_MUTVEHICLE/sig_DEGs_12_MUTcellsVsWTcells_from_MUTPCB_MUTVEHICLE.csv",
+  "13_MUTcellsVsWTcells_within_MUTVEHICLE/sig_DEGs_13_MUTcellsVsWTcells_within_MUTVEHICLE.csv",
+  "14_MUTcellsVsWTcells_within_MUTPCB/sig_DEGs_14_MUTcellsVsWTcells_within_MUTPCB.csv",
+  "15_MUTcellsVsWTcells_from_MUTPCB_WTPCB/sig_DEGs_15_MUTcellsVsWTcells_from_MUTPCB_WTPCB.csv"
 )
 
 # Read each file into a list of data frames
@@ -64,60 +56,93 @@ for (i in seq_along(exp_list)) {
 combined_df <- do.call(rbind, exp_list)
 
 # Write the concatenated data frame to a new CSV file
-write_csv(concatenated_df, "concatenated_data.csv")
+write_csv(combined_df, "Summary_data/all_experiments_sig_DEGs.csv")
 
-###########################################
-## Venn diagram of the overlapping genes ##
-###########################################
+###############################
+## Number of DEGs up or down ##
+###############################
+summary_table <- combined_df %>%
+  group_by(DEG_experiment, Cell_type) %>%
+  summarise(
+    UP = sum(logFC > 0, na.rm = TRUE),
+    DOWN = sum(logFC < 0, na.rm = TRUE)
+  ) %>%
+  ungroup()
 
-# Extract significant DEGs
-sig_genes_Glutamatergic <- rownames(deg_results$Glutamatergic)[deg_results$Glutamatergic$adj.P.Val < 0.05]
-sig_genes_GABAergic <- rownames(deg_results$GABAergic)[deg_results$GABAergic$adj.P.Val < 0.05]
-sig_genes_Non_neuronal <- rownames(deg_results$`Non-neuronal`)[deg_results$`Non-neuronal`$adj.P.Val < 0.05]
-intersection_all2 <- intersect(sig_genes_Non_neuronal,sig_genes_Glutamatergic)
-intersection_all3 <- intersect(intersection_all2,sig_genes_GABAergic)
-intersection_all4 <- intersect(sig_genes_Glutamatergic,sig_genes_GABAergic)
-# Create a Venn diagram
-pdf(glue("{directory_path}/venn_sig_WTcellsVsWTcells_from_WTPCB_WTVEHICLE_DEGs.pdf"))
-temp <- venn.diagram(
-  x = list(
-    Glutamatergic = sig_genes_Glutamatergic,
-    GABAergic = sig_genes_GABAergic,
-    Non_neuronal = sig_genes_Non_neuronal
-  ),
-  category.names = c("Glutamatergic", "GABAergic", "Non-neuronal"),
-  main = 'sig_WTcellsVsWTcells_from_HETPCB_HETVEHICLE_DEGs ',
-  #filename = glue("{base_path}/broad_group_analysis/venn_glutamatergic.pdf"),
-  filename = NULL,
-  col = c('#E6B8BFFF', '#CC7A88FF', '#990F26FF'), 
-  fill = c('#E6B8BFFF', '#CC7A88FF', '#990F26FF'),
-  cat.cex = 1.2,
-  cat.fontface = "bold",
-  euler.d = TRUE,
-  disable.logging = TRUE,
-  hyper.test = TRUE
-)
-grid.draw(temp)
-dev.off()
+print(summary_table)
+write_csv(summary_table, "Summary_data/all_experiments_sig_DEGs.csv")
 
 
-# Make all vectors the same length (pad with NA)
-max_length <- max(length(sig_genes_Glutamatergic), length(sig_genes_GABAergic), length(sig_genes_Non_neuronal))
-sig_genes_Glutamatergic <- c(sig_genes_Glutamatergic, rep(NA, max_length - length(sig_genes_Glutamatergic)))
-sig_genes_GABAergic <- c(sig_genes_GABAergic, rep(NA, max_length - length(sig_genes_GABAergic)))
-sig_genes_Non_neuronal <- c(sig_genes_Non_neuronal, rep(NA, max_length - length(sig_genes_Non_neuronal)))
+# Ensure summary_table is in the right format
+summary_table <- summary_table %>%
+  gather(key = "logFC_type", value = "count", UP, DOWN)
 
-# Combine into a dataframe
-combined_df <- data.frame(sig_genes_Glutamatergic, sig_genes_GABAergic, sig_genes_Non_neuronal)
+summary_table$Regulation = summary_table$logFC_type
 
-go.obj <- newGeneOverlap(combined_df$sig_genes_Glutamatergic,
-                         combined_df$sig_genes_GABAergic,
-                         combined_df$sig_genes_Non_neuronal,
-                         genome.size = 22000)
-go.obj <- testGeneOverlap(go.obj)
-getPval(go.obj)
-getOddsRatio(go.obj)
-getJaccard(go.obj)
-getContbl(go.obj)
-show(go.obj)
-writeLines(capture.output(show(go.obj)), glue('{directory_path}/geneoverlap_statistics.txt'))
+summary_table <- summary_table %>%
+  mutate(
+    # Extract the number between underscores and convert it to numeric
+    OrderNumber = as.numeric(str_extract(DEG_experiment, "(?<=_)[0-9]+(?=_)"))
+  ) %>%
+  arrange(OrderNumber) %>% # Arrange the rows based on the extracted number
+  select(-OrderNumber) # Optionally remove the OrderNumber column
+summary_table$DEG_experiment <- factor(summary_table$DEG_experiment, 
+                                       levels = rev(unique(summary_table$DEG_experiment)))
+
+summary_table <- summary_table %>%
+  filter(Cell_type != "Non-neuronal")
+
+ggplot(summary_table, aes(x = DEG_experiment, y = count, fill = Regulation)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.7), width = 0.6) +
+  coord_flip() + # Flip the coordinates to make the bars horizontal
+  facet_wrap(~ Cell_type) +
+  theme_minimal() +
+  labs(x = "DEG Experiment", y = "DEG count", fill = "Regulation") +
+  scale_fill_manual(values = c("UP" = "red", "DOWN" = "blue")) +
+  scale_y_continuous(labels = abs) + # Use absolute values for labels
+  theme(
+    text = element_text(size=16),
+    legend.position = 'right',
+    legend.background = element_rect(),
+    plot.title = element_text(angle = 0, size = 16, face = 'bold', vjust = 1),
+    plot.subtitle = element_text(angle = 0, size = 14, face = 'bold', vjust = 1),
+    plot.caption = element_text(angle = 0, size = 12, face = 'bold', vjust = 1),
+    axis.text.x = element_text(angle = 0, size = 12, face = 'bold', hjust = 1.10),
+    axis.text.y = element_text(angle = 0, size = 12, face = 'bold', vjust = 0.5),
+    axis.title = element_text(size = 16, face = 'bold'),
+    axis.title.x = element_text(size = 16, face = 'bold'),
+    axis.title.y = element_text(size = 16, face = 'bold'),
+    axis.line = element_line(colour = 'black'),
+    legend.key = element_blank(), # removes the border
+    legend.key.size = unit(1, "cm"), # Sets overall area/size of the legend
+    legend.text = element_text(size = 14, face = "bold"), # Text size
+    title = element_text(size = 14, face = "bold")
+  )
+ggplot2::ggsave(("Summary_data/all_experiments_logFC_DEGs_non-neuronalremoved.pdf"),
+                device = NULL,
+                height = 8.5,
+                width = 12)
+
+#################
+## UPset plots ##
+#################
+
+aggregate_symbols <- function(df) {
+  df %>%
+    group_by(DEG_experiment) %>%
+    summarise(SYMBOL = list(unique(SYMBOL))) %>%
+    pull(SYMBOL)
+}
+
+glutamatergic_sets <- aggregate_symbols(combined_df %>%
+                                          filter(Cell_type == "Glutamatergic"))
+
+gabaergic_sets <- aggregate_symbols(combined_df %>%
+                                      filter(Cell_type == "GABAergic"))
+
+combined_df %>%
+  ggplot(aes(x = SYMBOL)) +
+  geom_bar() +
+  facet_wrap(~ DEG_experiment, scales = "free") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "SYMBOL", y = "Count", title = "Overlap of SYMBOL for each DEG_experiment")
