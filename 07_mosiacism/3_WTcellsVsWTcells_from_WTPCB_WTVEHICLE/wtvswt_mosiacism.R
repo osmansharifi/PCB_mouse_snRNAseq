@@ -18,7 +18,7 @@ library(enrichR)
 ##################
 base_path <- '/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/'
 load(glue('{base_path}/PEBBLES_parsed.RData'))
-mosaic.cortex <- subset(x = PEBBLES_soupx, subset = Genotype == 'HET')
+mosaic.cortex <- subset(x = PEBBLES_soupx, subset = Group == c('WT-PCB', 'WT-VEHICLE'))
 
 # Perform DEG analysis between the WT cells from the WT mouse and WT cells from the mosaic brains
 cell_nonautonomous <- subset(x = mosaic.cortex, subset = Mecp2_allele == 'WT_Mecp2')

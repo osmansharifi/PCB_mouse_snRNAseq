@@ -146,3 +146,16 @@ combined_df %>%
   facet_wrap(~ DEG_experiment, scales = "free") +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   labs(x = "SYMBOL", y = "Count", title = "Overlap of SYMBOL for each DEG_experiment")
+
+combined_df %>%
+  ggplot(aes(x = SYMBOL)) +
+  geom_bar() +
+  facet_wrap(~DEG_experiment, scales = "free") +
+  scale_x_upset(n_intersections = 10)
+
+ggupset(data = combined_df,
+        sets = c("DEG_experiment", "Cell_type"),
+        keep_intersections = TRUE,
+        order_by = "degree",
+        main_bar_color = "skyblue",
+        sets_bar_color = "skyblue")
