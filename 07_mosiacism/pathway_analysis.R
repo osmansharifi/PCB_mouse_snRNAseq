@@ -55,3 +55,63 @@ for (i in 1:nrow(combinations)) {
   # Write enrichment results to enrichr.xlsx
   write.xlsx(enrichment_results, file = glue("enrichr_{DEG_experiment}_{Cell_type}.xlsx"))
 }
+
+# Load required libraries
+library(readxl)  # for reading Excel files
+library(dplyr)    # for data manipulation
+
+# Get a list of directories in the current working directory
+glut_directories <- list.dirs()
+
+# Initialize an empty list to store data frames
+all_data <- list()
+
+# Iterate over each directory
+for (dir in glut_directories) {
+  # Check if the directory contains the desired Excel file
+  file_path <- file.path(dir, "EnrichR_Glutamatergic.xlsx")
+  if (file.exists(file_path)) {
+    # Read the Excel file into a data frame
+    df <- read_excel(file_path, sheet = "KEGG_2019_Mouse")  # Adjust sheet number if needed
+    
+    # Add a new column for the directory name (experiment name)
+    df$Experiment_name <- basename(dir)
+    
+    # Append the data frame to the list
+    all_data <- c(all_data, list(df))
+  }
+}
+
+# Combine all data frames into a single data frame
+glut_df <- bind_rows(all_data)
+
+# Get a list of directories in the current working directory
+gaba_directories <- list.dirs()
+
+# Initialize an empty list to store data frames
+all_data <- list()
+
+# Iterate over each directory
+for (dir in gaba_directories) {
+  # Check if the directory contains the desired Excel file
+  file_path <- file.path(dir, "EnrichR_GABAergic.xlsx")
+  if (file.exists(file_path)) {
+    # Read the Excel file into a data frame
+    df <- read_excel(file_path, sheet = "KEGG_2019_Mouse")  # Adjust sheet number if needed
+    
+    # Add a new column for the directory name (experiment name)
+    df$Experiment_name <- basename(dir)
+    
+    # Append the data frame to the list
+    all_data <- c(all_data, list(df))
+  }
+}
+
+# Combine all data frames into a single data frame
+gaba_df <- bind_rows(all_data)
+
+# Assuming df is your dataframe
+filtered_gaba_df <- subset(gaba_df, P.value <= 0.05)
+filtered_glut_df <- subset(glut_df, P.value <= 0.05)
+write.csv(filtered_gaba_df, file = 'Summary_data/Combined_sig_GABAergic_pathways.csv')
+write.csv(filtered_glut_df, file = 'Summary_data/Combined_sig_Glutamatergic_pathways.csv')
