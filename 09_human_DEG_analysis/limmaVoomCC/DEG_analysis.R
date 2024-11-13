@@ -17,19 +17,10 @@ library(enrichR)
 ## Load samples ##
 ##################
 base_path <- '/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/09_human_DEG_analysis/'
-load(glue('{base_path}/DEanalysis_01.RData'))
 load('/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/08_human_hdWGCNA/Rett_human_cortex.RData')
 
-# Create a new column 'Genotype' in the dataframe
-human_rettcort@meta.data$Genotype <- ifelse(grepl("CTRL", human_rettcort@meta.data$orig.ident), 
-                                            "Control", 
-                                            ifelse(grepl("RTT", human_rettcort@meta.data$orig.ident), "RTT", NA))
-s.obj <- subset(x = human_rettcort, subset = Genotype == 'RTT')
-# Remove rows where PCB_binary is NA in the meta.data
-s.obj <- subset(s.obj, subset = !is.na(PCB_binary))
-# Check for rows with NA in PCB_binary and remove them from the object
-s.obj <- subset(s.obj, cells = rownames(s.obj@meta.data[!is.na(s.obj@meta.data$PCB_binary), ]))
-
+s.obj <- subset(x = human_rettcort, subset = Condition == 'RTT')
+s.obj <- subset(s.obj, subset = PCB_binary != 'NA')
 
 # Perform DEG analysis between the WT cells from the WT mouse and WT cells from the mosaic brains
 #cell_nonautonomous <- subset(x = s.obj, subset = Mecp2_allele == 'WT_Mecp2')
@@ -39,63 +30,34 @@ s.obj <- subset(s.obj, cells = rownames(s.obj@meta.data[!is.na(s.obj@meta.data$P
 #slct_WT_from_VEHICLE = sample(WT_from_VEHICLE, size = 199)
 #subset_cell_nonautonomous = subset(cell_nonautonomous, cells = c(slct_WT_from_PCB, slct_WT_from_VEHICLE))
 celltypes <- unique(s.obj@meta.data$predicted.class)
-deg_results <- list()
+deg_results <- list()  # To store results for each cell type
 
 for (celltype in celltypes) {
   cat("Performing DEG analysis for", celltype, "\n")
   
-  # Subset cells based on predicted.class
-  predicted.class_subset <- subset(s.obj, subset = predicted.class == celltype)
+  # Subset cells based on Cell_type
+  cell_type_subset <- subset(s.obj, subset = predicted.class == celltype)
   
-  # Get expression info
-  expr <- as.matrix(GetAssayData(predicted.class_subset))
+  # Get expression data
+  expr <- as.matrix(GetAssayData(cell_type_subset))
   
-  # Filter out genes that are 0 for every cell
-  bad <- which(rowSums(expr) == 0)
-  expr <- expr[-bad, ]
-  
-  logcpm <- cpm(expr, prior.count = 2, log = TRUE)
-  mm <- model.matrix(~0 + PCB_binary, data = predicted.class_subset@meta.data)
-  y <- voom(expr, mm, plot = TRUE)
-  fit <- lmFit(y, mm)
-  
-  # Extract DEG results
-  contrasts <- makeContrasts(c(PCB_binaryYes) - c(PCB_binaryNo), levels = colnames(coef(fit)))
-  tmp <- contrasts.fit(fit, contrasts = contrasts)
-  tmp <- eBayes(tmp)
-  top_table <- topTable(tmp, sort.by = "M", n = Inf) # top 20 DE genes
-  
-  # Store DEG results for this predicted.class group
-  deg_results[[celltype]] <- top_table
-}
-
-#TEST
-for (celltype in celltypes) {
-  cat("Performing DEG analysis for", celltype, "\n")
-  
-  # Subset cells based on predicted.class
-  predicted.class_subset <- subset(s.obj, subset = predicted.class == celltype)
-  
-  # Get expression info
-  expr <- as.matrix(GetAssayData(predicted.class_subset))
-  
-  # Filter out genes that are 0 for every cell
+  # Filter out genes with zero counts in all cells
   bad <- which(rowSums(expr) == 0)
   expr <- expr[-bad, ]
   
   # Check dimensions
   cat("Number of cells in expression matrix:", ncol(expr), "\n")
-  cat("Number of cells in metadata:", nrow(predicted.class_subset@meta.data), "\n")
+  cat("Number of cells in metadata:", nrow(cell_type_subset@meta.data), "\n")
   
-  if (!all(colnames(expr) == rownames(predicted.class_subset@meta.data))) {
+  if (!all(colnames(expr) == rownames(cell_type_subset@meta.data))) {
     stop("Mismatch between expression matrix and metadata cell names.")
   }
   
   # Compute log-transformed CPM
   logcpm <- cpm(expr, prior.count = 2, log = TRUE)
   
-  # Create design matrix
-  mm <- model.matrix(~0 + PCB_binary, data = predicted.class_subset@meta.data)
+  # Create the design matrix
+  mm <- model.matrix(~0 + PCB_binary, data = cell_type_subset@meta.data)
   
   # Ensure design matrix matches expression data dimensions
   cat("Design matrix dimensions:", dim(mm), "\n")
@@ -103,21 +65,30 @@ for (celltype in celltypes) {
     stop("Mismatch between design matrix and expression data.")
   }
   
-  # Run voom and linear model fitting
+  # Run voom normalization and linear model fitting
   y <- voom(expr, mm, plot = TRUE)
   fit <- lmFit(y, mm)
   
-  # Extract DEG results
+  # Perform contrast fitting and eBayes
   contrasts <- makeContrasts(PCB_binaryYes - PCB_binaryNo, levels = colnames(coef(fit)))
   tmp <- contrasts.fit(fit, contrasts = contrasts)
   tmp <- eBayes(tmp)
-  top_table <- topTable(tmp, sort.by = "M", n = Inf)
   
-  # Store DEG results for this celltype
+  # Extract top DEG results
+  top_table <- topTable(tmp, sort.by = "P", n = Inf)
+  
+  # Add Cell_type information
+  top_table$Cell_type <- celltype
+  
+  # Store the DEG results for this cell type in the list
   deg_results[[celltype]] <- top_table
 }
 
-##
+# Option to concatenate results into a single dataframe after the loop
+combined_deg_results <- do.call(rbind, deg_results)
+
+# Filter the combined_deg_results based on the adjusted p-value
+filtered_deg_results <- combined_deg_results[combined_deg_results$adj.P.Val <= 0.05, ]
 
 # Access DEG results for each predicted.class group
 for (celltype in celltypes) {
@@ -127,9 +98,6 @@ for (celltype in celltypes) {
   num_degs <- length(which(deg_table$adj.P.Val < 0.05))
   
   print(num_degs)
-  
-  # Additional analysis if needed
-  # summary(decideTests(tmp))
 }
 
 top.table <- deg_results$`Non-Neuronal`
@@ -269,7 +237,7 @@ DEGs <- deg_results$Glutamatergic %>%
                                       logFC <0 ~ -1/(2^logFC))) %>%
   dplyr::select(SYMBOL, FC, logFC, P.Value, adj.P.Val, AveExpr, t, B) %T>%
   openxlsx::write.xlsx(file=glue::glue("{directory_path}/DEGs.xlsx")) %>%
-  dplyr::filter(P.Value < 0.05) %T>%
+  dplyr::filter(P.Value < 0.001) %T>%
   openxlsx::write.xlsx(file=glue::glue("{directory_path}/sig_DEGs.xlsx"))
 
 print(glue::glue("GO and Pathway analysis of {i} cells"))
@@ -280,10 +248,10 @@ tryCatch({
   DEGs %>% 
     dplyr::select(SYMBOL) %>%
     purrr::flatten() %>%
-    enrichR::enrichr(c("GO_Biological_Process_2021",
-                       "GO_Molecular_Function_2021",
-                       "GO_Cellular_Component_2021",
-                       "KEGG_2021_Human",
+    enrichR::enrichr(c("GO_Biological_Process_2019",
+                       "GO_Molecular_Function_2019",
+                       "GO_Cellular_Component_2019",
+                       "KEGG_2019_Human",
                        "RNA-Seq_Disease_Gene_and_Drug_Signatures_from_GEO")) %>%
     purrr::set_names(names(.) %>% stringr::str_trunc(31, ellipsis="")) %T>%
     openxlsx::write.xlsx(file=glue::glue("{directory_path}/Glutamatergic_enrichr.xlsx")) %>%
