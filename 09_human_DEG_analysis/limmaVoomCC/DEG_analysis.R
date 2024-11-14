@@ -84,12 +84,6 @@ for (celltype in celltypes) {
   deg_results[[celltype]] <- top_table
 }
 
-# Option to concatenate results into a single dataframe after the loop
-combined_deg_results <- do.call(rbind, deg_results)
-
-# Filter the combined_deg_results based on the adjusted p-value
-filtered_deg_results <- combined_deg_results[combined_deg_results$adj.P.Val <= 0.05, ]
-
 # Access DEG results for each predicted.class group
 for (celltype in celltypes) {
   cat("DEG analysis results for", celltype, "\n")
@@ -100,7 +94,9 @@ for (celltype in celltypes) {
   print(num_degs)
 }
 
-top.table <- deg_results$`Non-Neuronal`
+top.table <- deg_results$GABAergic
+# Subset top_table for rows where Cell_type is "Non-Neuronal"
+#top.table <- top_table[top_table$Cell_type == `Non-Neuronal`, ]
 top.table$Gene <- rownames(top.table)
 # Add necessary columns to the data frame
 top.table$diffexpressed <- 'NO'
@@ -162,10 +158,10 @@ ggplot2::ggsave(glue("{directory_path}/Nonneuronal_Volcano_{dir_name}.pdf"),
 deg_results$Glutamatergic$Cell_type <- "Glutamatergic"
 deg_results$GABAergic$Cell_type <- "GABAergic"
 deg_results$`Non-neuronal`$Cell_type <- "Non_Neuronal"
-WTvsWT <- rbind(deg_results$Glutamatergic, deg_results$GABAergic, deg_results$`Non-Neuronal`)
-WTvsWT$SYMBOL <- rownames(WTvsWT)
-WTvsWT_significant <- subset(WTvsWT, adj.P.Val <= 0.05)
-Human_rett_PCBvs_noPCB_sig_DEGs = WTvsWT_significant
+all_degs <- rbind(deg_results$Glutamatergic, deg_results$GABAergic, deg_results$`Non-Neuronal`)
+all_degs$SYMBOL <- rownames(all_degs)
+sig_all_degs <- all_degs[all_degs$adj.P.Val <= 0.05, ]
+Human_rett_PCBvs_noPCB_sig_DEGs = sig_all_degs
 write.csv(Human_rett_PCBvs_noPCB_sig_DEGs, file = glue('{directory_path}/Human_rett_PCBvs_noPCB_sig_DEGs.csv'))
 ###########################################
 ## Venn diagram of the overlapping genes ##
@@ -226,46 +222,45 @@ writeLines(capture.output(show(go.obj)), glue('{directory_path}/geneoverlap_stat
 ######################
 ## Pathway analysis ##
 ######################
-DEGs = top.table
-# Top DEGs
+DEGs = deg_results$GABAergic
+DEGs <- DEGs[DEGs$adj.P.Val <= 0.05, ]
 
-DEGs <- deg_results$Glutamatergic %>%
-  tibble::rownames_to_column() %>%
+# Ensure the row names are preserved as a SYMBOL column
+DEGs <- DEGs %>%
+  tibble::rownames_to_column("SYMBOL") %>%
   tibble::as_tibble() %>%
-  dplyr::rename(SYMBOL = rowname) %>%
-  dplyr::mutate(FC = dplyr::case_when(logFC >0 ~ 2^logFC,
-                                      logFC <0 ~ -1/(2^logFC))) %>%
+  dplyr::mutate(FC = dplyr::case_when(logFC > 0 ~ 2^logFC,
+                                      logFC < 0 ~ -1/(2^logFC))) %>%
   dplyr::select(SYMBOL, FC, logFC, P.Value, adj.P.Val, AveExpr, t, B) %T>%
   openxlsx::write.xlsx(file=glue::glue("{directory_path}/DEGs.xlsx")) %>%
   dplyr::filter(P.Value < 0.001) %T>%
   openxlsx::write.xlsx(file=glue::glue("{directory_path}/sig_DEGs.xlsx"))
 
-print(glue::glue("GO and Pathway analysis of {i} cells"))
-
-enrichR:::.onAttach()
-source('/Users/osman/Documents/GitHub/original-snRNA-seq-pipeline/scripts/09_mosiacism_analysis/GO_ploting_functions.R')
 tryCatch({
-  DEGs %>% 
-    dplyr::select(SYMBOL) %>%
-    purrr::flatten() %>%
-    enrichR::enrichr(c("GO_Biological_Process_2019",
-                       "GO_Molecular_Function_2019",
-                       "GO_Cellular_Component_2019",
-                       "KEGG_2019_Human",
-                       "RNA-Seq_Disease_Gene_and_Drug_Signatures_from_GEO")) %>%
+  enriched_results <- enrichR::enrichr(DEGs$SYMBOL, c("GO_Biological_Process_2021",
+                                         "GO_Molecular_Function_2021",
+                                         "GO_Cellular_Component_2021",
+                                         "KEGG_2021_Human",
+                                         "Panther_2016",
+                                         "Reactome_2021",
+                                         "RNA-Seq_Disease_Gene_and_Drug_Signatures_from_GEO"))
+  
+  print(str(enriched_results))  # Check the structure of the enrichment results
+  
+  enriched_results %>%
     purrr::set_names(names(.) %>% stringr::str_trunc(31, ellipsis="")) %T>%
-    openxlsx::write.xlsx(file=glue::glue("{directory_path}/Glutamatergic_enrichr.xlsx")) %>%
+    openxlsx::write.xlsx(file=glue::glue("{directory_path}/GABAergic_enrichr.xlsx")) %>%
     slimGO(tool = "enrichR",
            annoDb = "org.Hs.eg.db",
            plots = FALSE) %T>%
-    openxlsx::write.xlsx(file = glue::glue("{directory_path}/Glutamatergic_rrvgo_enrichr.xlsx")) %>%
+    openxlsx::write.xlsx(file = glue::glue("{directory_path}/GABAergic_rrvgo_enrichr.xlsx")) %>%
     GOplot() %>%
-    ggplot2::ggsave(glue::glue("{directory_path}/Glutamatergic_enrichr_plot.pdf"),
+    ggplot2::ggsave(glue::glue("{directory_path}/GABAergic_enrichr_plot.pdf"),
                     plot = .,
                     device = NULL,
                     height = 8.5,
-                    width = 10) },
-  error = function(error_condition) {
-    print(glue::glue("ERROR: Gene Ontology pipe did not finish for samples"))
-  })
-print(glue::glue("The pipeline has finished for samples"))
+                    width = 10)
+}, error = function(error_condition) {
+  print(glue::glue("ERROR: Gene Ontology pipe did not finish for samples"))
+  print(error_condition) # Print the error for debugging
+})
