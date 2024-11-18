@@ -13,6 +13,7 @@ library(ggplot2)
 library(ggrepel)
 library(GeneOverlap)
 library(enrichR)
+library(RColorBrewer)
 ##################
 ## Load samples ##
 ##################
@@ -223,7 +224,7 @@ writeLines(capture.output(show(go.obj)), glue('{directory_path}/geneoverlap_stat
 ## Pathway analysis ##
 ######################
 DEGs = deg_results$GABAergic
-DEGs <- DEGs[DEGs$adj.P.Val <= 0.05, ]
+DEGs <- DEGs[DEGs$adj.P.Val <= 0.000000000001, ]
 
 # Ensure the row names are preserved as a SYMBOL column
 DEGs <- DEGs %>%
@@ -236,6 +237,34 @@ DEGs <- DEGs %>%
   dplyr::filter(P.Value < 0.001) %T>%
   openxlsx::write.xlsx(file=glue::glue("{directory_path}/sig_DEGs.xlsx"))
 
+# Ensure SYMBOL is a column (convert row names to SYMBOL)
+DEGs <- DEGs %>%
+  tibble::rownames_to_column("SYMBOL") %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(FC = dplyr::case_when(logFC > 0 ~ 2^logFC,
+                                      logFC < 0 ~ -1/(2^logFC))) %>%
+  dplyr::select(SYMBOL, FC, logFC, P.Value, adj.P.Val, AveExpr, t, B)
+
+# Sort by P.Value in ascending order
+DEGs <- DEGs %>%
+  arrange(P.Value)
+
+# Select top 5000 DEGs based on P.Value
+DEGs <- DEGs %>%
+  head(5000)
+
+# Write all DEGs to an Excel file
+openxlsx::write.xlsx(DEGs, file = glue("{directory_path}/DEGs.xlsx"))
+
+# Filter significant DEGs (P.Value < 0.001) and write to another Excel file
+sig_DEGs <- DEGs_top5000 %>%
+  dplyr::filter(P.Value < 0.001)
+
+# Write significant DEGs to an Excel file
+openxlsx::write.xlsx(sig_DEGs, file = glue("{directory_path}/sig_DEGs.xlsx"))
+
+# Optionally, print or return the top 5000 DEGs (for inspection)
+head(DEGs)
 tryCatch({
   enriched_results <- enrichR::enrichr(DEGs$SYMBOL, c("GO_Biological_Process_2021",
                                          "GO_Molecular_Function_2021",
@@ -264,3 +293,60 @@ tryCatch({
   print(glue::glue("ERROR: Gene Ontology pipe did not finish for samples"))
   print(error_condition) # Print the error for debugging
 })
+
+####
+#Plot Pathways
+####
+library(openxlsx)
+#load files
+glut <- read.xlsx("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/09_human_DEG_analysis/limmaVoomCC/Glutamatergic_enrichr.xlsx", sheet = 4)
+gaba <- read.xlsx("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/09_human_DEG_analysis/limmaVoomCC/GABAergic_enrichr.xlsx", sheet = 4)
+NN <- read.xlsx("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/09_human_DEG_analysis/limmaVoomCC/Non_neuronal_enrichr.xlsx", sheet = 4)
+
+# Extract top 10 rows from each dataframe
+df1_top <- head(glut, 10)
+df2_top <- head(gaba, 10)
+df3_top <- head(NN, 10)
+
+# Combine the data frames into one
+combined_df <- bind_rows(
+  df1_top %>% mutate(Cell_Type = "Glutamatergic"),
+  df2_top %>% mutate(Cell_Type = "GABAergic"),
+  df3_top %>% mutate(Cell_Type = "Non-Neuronal")
+)
+
+# Plot using ggplot
+ggplot(combined_df, aes(x = Term, y = Cell_Type, color = P.value)) +
+  geom_point(size = 8) +
+  scale_color_gradientn(name = "P.value", colors = brewer.pal(n = 11, name = "RdBu")) +
+  scale_size_continuous(range = c(3, 8)) +
+  scale_y_discrete(name = "Cell Type") +
+  scale_x_discrete(name = "Terms") +
+  theme_minimal() +
+  guides(shape = guide_legend(override.aes = list(size = 5))) +
+  labs(title = 'KEGG Terms') +
+  theme(legend.position = "bottom") +
+  theme_bw(base_size = 24) +
+  theme(
+    legend.position = 'right',
+    legend.background = element_rect(),
+    plot.title = element_text(angle = 0, size = 18, face = 'bold', vjust = 1),
+    plot.subtitle = element_text(angle = 0, size = 14, face = 'bold', vjust = 1),
+    plot.caption = element_text(angle = 0, size = 14, face = 'bold', vjust = 1),
+    axis.text.x = element_text(angle = 90, size = 18, face = 'bold', hjust = 1.0, vjust = 0.5, colour = "black"),
+    axis.text.y = element_text(angle = 0, size = 18, face = 'bold', vjust = 0.5, colour = "black"),
+    axis.title = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.title.x = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.title.y = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.line = element_line(colour = 'black'),
+    # Legend
+    legend.key = element_blank(), # removes the border
+    legend.key.size = unit(1, "cm"), # Sets overall area/size of the legend
+    legend.text = element_text(size = 18, face = "bold"), # Text size
+    title = element_text(size = 18, face = "bold")
+  ) +
+  coord_flip()
+ggplot2::ggsave(glue("{directory_path}/top10KEGG_human.pdf"),
+                device = NULL,
+                height = 8.5,
+                width = 12)
