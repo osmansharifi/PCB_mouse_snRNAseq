@@ -24,47 +24,97 @@ load("PEBBLES_clean.RData")
 allowWGCNAThreads(nThreads = 16)
 
 # Prepare Seurat Object for WGCNA
-metadata <- PEBBLES_soupx@meta.data
-timepoint <- lapply(metadata$orig.ident, function(x) {
-  split_name <- strsplit(x, "_")[[1]]
-  return(split_name[3])
-})
-PEBBLES_soupx@meta.data$Time_Point <- unlist(timepoint)
 
-genotype <- lapply(metadata$orig.ident, function(x) {
-  split_name <- strsplit(x, "_")[[1]]
-  return(split_name[1])
-})
-PEBBLES_soupx@meta.data$genotype <- unlist(genotype)
+# Create a new column 'PCB' initialized to NA
+human_rettcort$PCB <- NA
 
+# Fill PCB column based on orig.ident patterns
+
+# First condition
+pattern1 <- c("5125", "5161", "4591", "812", "662", "1136", "1711", "1846")
+values1 <- c(3.45, 23.67, 0.00, 9.23, 0.00, 82.86, 33.49, 0.00)
+
+for (i in seq_along(pattern1)) {
+  human_rettcort$PCB[grepl(pattern1[i], human_rettcort$orig.ident)] <- values1[i]
+}
+
+# Second condition
+pattern2 <- c("4687", "5075", "1420", "1815", "1748", "3381", "4852", "B5020")
+values2 <- c(0.00, 4.08, 27.07, 0.00, 37.83, 5.80, 0.00, 2.43)
+
+for (i in seq_along(pattern2)) {
+  human_rettcort$PCB[grepl(pattern2[i], human_rettcort$orig.ident)] <- values2[i]
+}
+
+human_rettcort$PCB_binary <- ifelse(human_rettcort$PCB > 0, "Yes", "No")
+# View updated metadata
+head(human_rettcort@meta.data)
+# Bar plot showing the PCB_binary status for each sample
+
+# Plot the graph, faceting by 'Group'
+ggplot(human_rettcort@meta.data, aes(x = orig.ident, fill = PCB_binary)) +
+  geom_bar(position = "dodge") +
+  scale_fill_manual(values = c("No" = "blue", "Yes" = "red")) +  # Custom colors for "No" and "Yes"
+  labs(title = "PCB Binary Status by Sample", x = "Sample", y = "Number of Cells") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels for better readability
+  facet_wrap(~ Condition, scales = "free_x")+  # Create separate plots for CTRL and RTT
+  guides(shape = guide_legend(override.aes = list(size = 5))) +
+  theme(legend.position = "bottom")+
+  theme_bw(base_size = 24) +
+  theme(
+    legend.position = 'right',
+    legend.background = element_rect(),
+    plot.title = element_text(angle = 0, size = 18, face = 'bold', vjust = 1),
+    plot.subtitle = element_text(angle = 0, size = 14, face = 'bold', vjust = 1),
+    plot.caption = element_text(angle = 0, size = 14, face = 'bold', vjust = 1),
+    
+    axis.text.x = element_text(angle = 45, size = 18, face = 'bold', hjust = 0.4, vjust = .6, colour = "black"),
+    axis.text.y = element_text(angle = 0, size = 18, face = 'bold', vjust = 0.5, colour = "black"),
+    axis.title = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.title.x = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.title.y = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.line = element_line(colour = 'black'),
+    
+    #Legend
+    legend.key = element_blank(), # removes the border
+    legend.key.size = unit(1, "cm"), # Sets overall area/size of the legend
+    legend.text = element_text(size = 18, face = "bold"), # Text size
+    title = element_text(size = 18, face = "bold")) 
+ggsave(glue::glue("PCB_presence_persample.pdf"), 
+       width = 15,
+       height = 12)
+
+
+metadata <- human_rettcort@meta.data
 
 # Preprocess
-DefaultAssay(PEBBLES_soupx) <- 'RNA'
-Idents(PEBBLES_soupx) <- 'cell_type'
+DefaultAssay(human_rettcort) <- 'RNA'
+Idents(human_rettcort) <- 'Cell_type'
 # Set up Seurat object for WGCNA
-PEBBLES_soupx <- SetupForWGCNA(
-  PEBBLES_soupx,
+human_rettcort <- SetupForWGCNA(
+  human_rettcort,
   gene_select = "fraction", # the gene selection approach
   fraction = 0.15, # fraction of cells that a gene needs to be expressed in order to be included
-  wgcna_name = "pebbles_cortex_hdwgcna" # the name of the hdWGCNA experiment
+  wgcna_name = "human_cortex_hdwgcna" # the name of the hdWGCNA experiment
 )
 
 # construct metacells  in each group
-PEBBLES_soupx <- MetacellsByGroups(
-  PEBBLES_soupx,
-  group.by = c("cell_type"), # specify the columns in PEBBLES_soupx@meta.data to group by
-  wgcna_name = 'pebbles_cortex_hdwgcna', 
+human_rettcort <- MetacellsByGroups(
+  human_rettcort,
+  group.by = c("Cell_type"), # specify the columns in human_rettcort@meta.data to group by
+  wgcna_name = 'human_cortex_hdwgcna', 
   k = 25, # nearest-neighbors parameter
   max_shared = 10, # maximum number of shared cells between two metacells
-  ident.group = 'cell_type' # set the Idents of the metacell seurat object
+  ident.group = 'Cell_type' # set the Idents of the metacell seurat object
 )
 
 # normalize metacell expression matrix:
-PEBBLES_soupx <- NormalizeMetacells(seurat_obj = PEBBLES_soupx, wgcna_name = "pebbles_cortex_hdwgcna",)
-Idents(PEBBLES_soupx) <- "cell_type"
+human_rettcort <- NormalizeMetacells(seurat_obj = human_rettcort, wgcna_name = "pebbles_cortex_hdwgcna",)
+Idents(human_rettcort) <- "cell_type"
 # Set up the expression matrix
-PEBBLES_soupx <- SetDatExpr(
-  PEBBLES_soupx,
+human_rettcort <- SetDatExpr(
+  human_rettcort,
   group_name = c("L2_3_IT", "L4", "L5", "L6", "Sst", "Pvalb", "Vip", "Non-neuronal", "Astro", "Oligo", "Lamp5", "Sncg"), # the name of the group of interest in the group.by column
   group.by="cell_type", # the metadata column containing the cell type info. This same column should have also been used in MetacellsByGroups
   assay = 'RNA', # using RNA assay
@@ -72,13 +122,13 @@ PEBBLES_soupx <- SetDatExpr(
 )
 
 # Test different soft powers:
-PEBBLES_soupx <- TestSoftPowers(
-  PEBBLES_soupx,
+human_rettcort <- TestSoftPowers(
+  human_rettcort,
   networkType = 'signed' # you can also use "unsigned" or "signed hybrid"
 ) # this errors out if there are columns that are constant and dont change 
 
 # plot the results:
-plot_list <- PlotSoftPowers(PEBBLES_soupx)
+plot_list <- PlotSoftPowers(human_rettcort)
 
 # assemble with patchwork
 wrap_plots(plot_list, ncol=2)
@@ -87,69 +137,69 @@ ggplot2::ggsave("Softpowerthreshold.pdf",
                 height = 8.5,
                 width = 12)
 # construct co-expression network:
-PEBBLES_soupx <- ConstructNetwork(
-  PEBBLES_soupx, soft_power=5,
+human_rettcort <- ConstructNetwork(
+  human_rettcort, soft_power=5,
   setDatExpr=FALSE,
   overwrite_tom = TRUE# name of the topoligical overlap matrix written to disk
 )
 
-PlotDendrogram(PEBBLES_soupx, main='hdWGCNA PEBBLES Dendrogram')
+PlotDendrogram(human_rettcort, main='hdWGCNA PEBBLES Dendrogram')
 ggplot2::ggsave("WGCNA_Dendrogram.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
 
-#PEBBLES_soupx@misc$pebbles_cortex_hdwgcna$wgcna_modules$module <- paste0(PEBBLES_soupx@misc$pebbles_cortex_hdwgcna$wgcna_modules$module, "_")
+#human_rettcort@misc$pebbles_cortex_hdwgcna$wgcna_modules$module <- paste0(human_rettcort@misc$pebbles_cortex_hdwgcna$wgcna_modules$module, "_")
 # need to run ScaleData first or else harmony throws an error:
-PEBBLES_soupx <- ScaleData(PEBBLES_soupx, features=VariableFeatures(PEBBLES_soupx))
+human_rettcort <- ScaleData(human_rettcort, features=VariableFeatures(human_rettcort))
 
 # compute all MEs in the full single-cell dataset
-PEBBLES_soupx <- ModuleEigengenes(
-  PEBBLES_soupx,
+human_rettcort <- ModuleEigengenes(
+  human_rettcort,
   group.by.vars="Group",
   wgcna_name = "pebbles_cortex_hdwgcna",
   verbose = TRUE,
   pc_dim = c(1:20)
 )
-PEBBLES_soupx <- ModuleEigengenes(
-  PEBBLES_soupx)
+human_rettcort <- ModuleEigengenes(
+  human_rettcort)
 # harmonized module eigengenes:
-hMEs <- GetMEs(PEBBLES_soupx)
+hMEs <- GetMEs(human_rettcort)
 
 # module eigengenes:
-MEs <- GetMEs(PEBBLES_soupx, harmonized=FALSE)
+MEs <- GetMEs(human_rettcort, harmonized=FALSE)
 
 # compute eigengene-based connectivity (kME):
-PEBBLES_soupx <- ModuleConnectivity(
-  PEBBLES_soupx,
+human_rettcort <- ModuleConnectivity(
+  human_rettcort,
   group.by = 'cell_type', group_name = c("L2_3_IT", "L4", "L5", "L6", "Sst", "Pvalb", "Vip", "Sncg", "Non-neuronal", "Astro", "Oligo", "Lamp5")
 )
 
 # plot genes ranked by kME for each module
-PlotKMEs(PEBBLES_soupx, ncol=3)
+PlotKMEs(human_rettcort, ncol=3)
 ggplot2::ggsave("PEBBLES_kME.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
 # compute gene scoring for the top 25 hub genes by kME for each module
 # with Seurat method
-PEBBLES_soupx <- ModuleExprScore(
-  PEBBLES_soupx,
+human_rettcort <- ModuleExprScore(
+  human_rettcort,
   n_genes = 25,
   method='Seurat'
 )
 
 # compute gene scoring for the top 25 hub genes by kME for each module
 # with UCell method
-PEBBLES_soupx <- ModuleExprScore(
-  PEBBLES_soupx,
+human_rettcort <- ModuleExprScore(
+  human_rettcort,
   n_genes = 25,
   method='UCell'
 )
 
 # make a featureplot of hMEs for each module
 plot_list <- ModuleFeaturePlot(
-  PEBBLES_soupx,
+  human_rettcort,
   features='hMEs', # plot the hMEs
   order=TRUE # order so the points with highest hMEs are on top
 )
@@ -161,15 +211,15 @@ ggplot2::ggsave("PEBBLES_module_UMAPs.pdf",
                 height = 8.5,
                 width = 12)
 
-levels(PEBBLES_soupx) <- c("L2_3_IT", "L4", "L5", "L6","Pvalb", "Vip", "Sst","Sncg","Lamp5","Peri", "Endo", "Oligo","Astro","Non-neuronal")
-DimPlot_scCustom(seurat_object = PEBBLES_soupx, label = FALSE, pt.size = 0.5, figure_plot = TRUE)
+levels(human_rettcort) <- c("L2_3_IT", "L4", "L5", "L6","Pvalb", "Vip", "Sst","Sncg","Lamp5","Peri", "Endo", "Oligo","Astro","Non-neuronal")
+DimPlot_scCustom(seurat_object = human_rettcort, label = FALSE, pt.size = 0.5, figure_plot = TRUE)
 ggplot2::ggsave("celltype_UMAPs.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
 # make a featureplot of hub scores for each module
 plot_list <- ModuleFeaturePlot(
-  PEBBLES_soupx,
+  human_rettcort,
   features='scores', # plot the hub gene scores
   order='shuffle', # order so cells are shuffled
   ucell = TRUE) # depending on Seurat vs UCell for gene scoring
@@ -182,20 +232,20 @@ ggplot2::ggsave("PEBBLES_hubgene_scores_UMAPs.pdf",
                 height = 8.5,
                 width = 12)
 # plot module correlagram
-ModuleCorrelogram(PEBBLES_soupx)
+ModuleCorrelogram(human_rettcort)
 ggplot2::ggsave("PEBBLES_module_to_module_cor.pdf",
                 device = NULL,
                 height = 8.5,
                 width = 12)
 
 # get hMEs from seurat object
-MEs <- GetMEs(PEBBLES_soupx, harmonized=TRUE)
+MEs <- GetMEs(human_rettcort, harmonized=TRUE)
 mods <- colnames(MEs); mods <- mods[mods != 'grey']
 
 # add hMEs to Seurat meta-data:
-PEBBLES_soupx@meta.data <- cbind(PEBBLES_soupx@meta.data, MEs)
+human_rettcort@meta.data <- cbind(human_rettcort@meta.data, MEs)
 # plot with Seurat's DotPlot function
-DotPlot_scCustom(seurat_object = PEBBLES_soupx, features=mods, flip_axes = TRUE, x_lab_rotate = TRUE, remove_axis_titles = FALSE) + xlab("Modules") + ylab("Cell_Type")
+DotPlot_scCustom(seurat_object = human_rettcort, features=mods, flip_axes = TRUE, x_lab_rotate = TRUE, remove_axis_titles = FALSE) + xlab("Modules") + ylab("Cell_Type")
 ggplot2::ggsave("PEBBLES_Average_expression_hubgenes.pdf",
                 device = NULL,
                 height = 8.5,
@@ -213,7 +263,7 @@ traits_sheet$X.4 <- NULL
 traits_sheet$X.5 <- NULL
 
 # Get the sample names from the Seurat object
-sample_names <- PEBBLES_soupx@meta.data$Samples
+sample_names <- human_rettcort@meta.data$Samples
 
 # Add the exposure, weight and pregnant columns from traits_sheet
 PEBBLES_soupx@meta.data$Exposure_duration <- NA
