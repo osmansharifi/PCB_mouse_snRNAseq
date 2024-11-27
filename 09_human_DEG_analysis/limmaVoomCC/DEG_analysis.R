@@ -9,6 +9,7 @@ library(Seurat)
 library(glue)
 library(scCustomize)
 library(edgeR)
+library(limma)
 library(ggplot2)
 library(ggrepel)
 library(GeneOverlap)
@@ -55,7 +56,7 @@ for (celltype in celltypes) {
   }
   
   # Compute log-transformed CPM
-  logcpm <- cpm(expr, prior.count = 2, log = TRUE)
+  logcpm <- edgeR::cpm(expr, prior.count = 2, log = TRUE)
   
   # Create the design matrix
   mm <- model.matrix(~0 + PCB_binary, data = cell_type_subset@meta.data)
@@ -224,58 +225,35 @@ writeLines(capture.output(show(go.obj)), glue('{directory_path}/geneoverlap_stat
 ## Pathway analysis ##
 ######################
 DEGs = deg_results$GABAergic
-DEGs <- DEGs[DEGs$adj.P.Val <= 0.000000000001, ]
-
-# Ensure the row names are preserved as a SYMBOL column
-DEGs <- DEGs %>%
-  tibble::rownames_to_column("SYMBOL") %>%
-  tibble::as_tibble() %>%
-  dplyr::mutate(FC = dplyr::case_when(logFC > 0 ~ 2^logFC,
-                                      logFC < 0 ~ -1/(2^logFC))) %>%
-  dplyr::select(SYMBOL, FC, logFC, P.Value, adj.P.Val, AveExpr, t, B) %T>%
-  openxlsx::write.xlsx(file=glue::glue("{directory_path}/DEGs.xlsx")) %>%
-  dplyr::filter(P.Value < 0.001) %T>%
-  openxlsx::write.xlsx(file=glue::glue("{directory_path}/sig_DEGs.xlsx"))
-
 # Ensure SYMBOL is a column (convert row names to SYMBOL)
 DEGs <- DEGs %>%
   tibble::rownames_to_column("SYMBOL") %>%
   tibble::as_tibble() %>%
-  dplyr::mutate(FC = dplyr::case_when(logFC > 0 ~ 2^logFC,
-                                      logFC < 0 ~ -1/(2^logFC))) %>%
-  dplyr::select(SYMBOL, FC, logFC, P.Value, adj.P.Val, AveExpr, t, B)
+  dplyr::mutate(FC = dplyr::case_when(
+    logFC > 0 ~ 2^logFC,
+    logFC < 0 ~ -1/(2^logFC)
+  )) %>%
+  dplyr::select(SYMBOL, FC, logFC, P.Value, adj.P.Val, AveExpr, t, B) %>%
+  arrange(desc(abs(logFC)))
 
+DEGs <- DEGs %>%
+  head(500)
 # Sort by P.Value in ascending order
 DEGs <- DEGs %>%
   arrange(P.Value)
 
-# Select top 5000 DEGs based on P.Value
-DEGs <- DEGs %>%
-  head(5000)
-
 # Write all DEGs to an Excel file
 openxlsx::write.xlsx(DEGs, file = glue("{directory_path}/DEGs.xlsx"))
 
-# Filter significant DEGs (P.Value < 0.001) and write to another Excel file
-sig_DEGs <- DEGs_top5000 %>%
-  dplyr::filter(P.Value < 0.001)
-
-# Write significant DEGs to an Excel file
-openxlsx::write.xlsx(sig_DEGs, file = glue("{directory_path}/sig_DEGs.xlsx"))
-
-# Optionally, print or return the top 5000 DEGs (for inspection)
-head(DEGs)
 tryCatch({
   enriched_results <- enrichR::enrichr(DEGs$SYMBOL, c("GO_Biological_Process_2021",
                                          "GO_Molecular_Function_2021",
                                          "GO_Cellular_Component_2021",
                                          "KEGG_2021_Human",
                                          "Panther_2016",
-                                         "Reactome_2021",
                                          "RNA-Seq_Disease_Gene_and_Drug_Signatures_from_GEO"))
   
   print(str(enriched_results))  # Check the structure of the enrichment results
-  
   enriched_results %>%
     purrr::set_names(names(.) %>% stringr::str_trunc(31, ellipsis="")) %T>%
     openxlsx::write.xlsx(file=glue::glue("{directory_path}/GABAergic_enrichr.xlsx")) %>%
