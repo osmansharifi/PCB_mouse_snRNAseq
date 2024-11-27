@@ -44,7 +44,6 @@ filtered_data <- lapply(names(file_paths), function(name) {
 # Assign results to named list
 names(filtered_data) <- names(file_paths)
 
-
 #######################
 ## Create upset plot ##
 #######################
