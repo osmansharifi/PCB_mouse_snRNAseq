@@ -96,7 +96,8 @@ for (celltype in celltypes) {
   print(num_degs)
 }
 
-top.table <- deg_results$GABAergic
+##Change the cell type for volcano plot
+top.table <- deg_results$Glutamatergic
 # Subset top_table for rows where Cell_type is "Non-Neuronal"
 #top.table <- top_table[top_table$Cell_type == `Non-Neuronal`, ]
 top.table$Gene <- rownames(top.table)
@@ -224,7 +225,7 @@ writeLines(capture.output(show(go.obj)), glue('{directory_path}/geneoverlap_stat
 ######################
 ## Pathway analysis ##
 ######################
-DEGs = deg_results$GABAergic
+DEGs = deg_results$Glutamatergic
 # Ensure SYMBOL is a column (convert row names to SYMBOL)
 DEGs <- DEGs %>%
   tibble::rownames_to_column("SYMBOL") %>%
@@ -245,6 +246,24 @@ DEGs <- DEGs %>%
 # Write all DEGs to an Excel file
 openxlsx::write.xlsx(DEGs, file = glue("{directory_path}/DEGs.xlsx"))
 
+#Testing
+# Prepare DEGs
+DEGs <- deg_results$`Non-Neuronal` %>%
+  rownames_to_column("SYMBOL") %>%
+  as_tibble() %>%
+  mutate(FC = case_when(
+    logFC > 0 ~ 2^logFC,
+    logFC < 0 ~ -1/(2^logFC)
+  )) %>%
+  select(SYMBOL, FC, logFC, P.Value, adj.P.Val, AveExpr, t, B) %>%
+  arrange(desc(abs(logFC))) %>%
+  head(500) %>%
+  arrange(P.Value)
+
+# Write DEGs to Excel
+write.xlsx(DEGs, file = glue("{directory_path}/DEGs.xlsx"))
+
+
 tryCatch({
   enriched_results <- enrichR::enrichr(DEGs$SYMBOL, c("GO_Biological_Process_2021",
                                          "GO_Molecular_Function_2021",
@@ -256,13 +275,13 @@ tryCatch({
   print(str(enriched_results))  # Check the structure of the enrichment results
   enriched_results %>%
     purrr::set_names(names(.) %>% stringr::str_trunc(31, ellipsis="")) %T>%
-    openxlsx::write.xlsx(file=glue::glue("{directory_path}/GABAergic_enrichr.xlsx")) %>%
+    openxlsx::write.xlsx(file=glue::glue("{directory_path}/Non-Neuronal_enrichr.xlsx")) %>%
     slimGO(tool = "enrichR",
            annoDb = "org.Hs.eg.db",
            plots = FALSE) %T>%
-    openxlsx::write.xlsx(file = glue::glue("{directory_path}/GABAergic_rrvgo_enrichr.xlsx")) %>%
+    openxlsx::write.xlsx(file = glue::glue("{directory_path}/Non-Neuronal_rrvgo_enrichr.xlsx")) %>%
     GOplot() %>%
-    ggplot2::ggsave(glue::glue("{directory_path}/GABAergic_enrichr_plot.pdf"),
+    ggplot2::ggsave(glue::glue("{directory_path}/Non-Neuronal_enrichr_plot.pdf"),
                     plot = .,
                     device = NULL,
                     height = 8.5,
@@ -279,7 +298,7 @@ library(openxlsx)
 #load files
 glut <- read.xlsx("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/09_human_DEG_analysis/limmaVoomCC/Glutamatergic_enrichr.xlsx", sheet = 4)
 gaba <- read.xlsx("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/09_human_DEG_analysis/limmaVoomCC/GABAergic_enrichr.xlsx", sheet = 4)
-NN <- read.xlsx("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/09_human_DEG_analysis/limmaVoomCC/Non_neuronal_enrichr.xlsx", sheet = 4)
+NN <- read.xlsx("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/09_human_DEG_analysis/limmaVoomCC/Non-Neuronal_enrichr.xlsx", sheet = 4)
 
 # Extract top 10 rows from each dataframe
 df1_top <- head(glut, 10)
