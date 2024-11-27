@@ -43,7 +43,7 @@ for (celltype in celltypes) {
   bad <- which(rowSums(expr) == 0)
   expr <- expr[-bad, ]
   
-  logcpm <- cpm(expr, prior.count = 2, log = TRUE)
+  logcpm <- edgeR::cpm(expr, prior.count = 2, log = TRUE)
   mm <- model.matrix(~0 + Treatment, data = broad_class_subset@meta.data)
   y <- voom(expr, mm, plot = TRUE)
   fit <- lmFit(y, mm)
@@ -240,3 +240,104 @@ tryCatch({
     print(glue::glue("ERROR: Gene Ontology pipe did not finish for samples"))
   })
 print(glue::glue("The pipeline has finished for samples"))
+
+# Prepare DEGs
+DEGs <- deg_results$`Non-neuronal` %>%
+  rownames_to_column("SYMBOL") %>%
+  as_tibble() %>%
+  mutate(FC = case_when(
+    logFC > 0 ~ 2^logFC,
+    logFC < 0 ~ -1/(2^logFC)
+  )) %>%
+  select(SYMBOL, FC, logFC, P.Value, adj.P.Val, AveExpr, t, B) %>%
+  arrange(desc(abs(logFC))) %>%
+  head(500) %>%
+  arrange(P.Value)
+
+# Write DEGs to Excel
+write.xlsx(DEGs, file = glue("{directory_path}/DEGs.xlsx"))
+
+
+tryCatch({
+  enriched_results <- enrichR::enrichr(DEGs$SYMBOL, c("GO_Biological_Process_2021",
+                                                      "GO_Molecular_Function_2021",
+                                                      "GO_Cellular_Component_2021",
+                                                      "KEGG_2021_Mouse",
+                                                      "Panther_2016",
+                                                      "RNA-Seq_Disease_Gene_and_Drug_Signatures_from_GEO"))
+  
+  print(str(enriched_results))  # Check the structure of the enrichment results
+  enriched_results %>%
+    purrr::set_names(names(.) %>% stringr::str_trunc(31, ellipsis="")) %T>%
+    openxlsx::write.xlsx(file=glue::glue("{directory_path}/Non-neuronal_enrichr.xlsx")) %>%
+    slimGO(tool = "enrichR",
+           annoDb = "org.Mm.eg.db",
+           plots = FALSE) %T>%
+    openxlsx::write.xlsx(file = glue::glue("{directory_path}/Non-neuronal_rrvgo_enrichr.xlsx")) %>%
+    GOplot() %>%
+    ggplot2::ggsave(glue::glue("{directory_path}/Non-neuronal_enrichr_plot.pdf"),
+                    plot = .,
+                    device = NULL,
+                    height = 8.5,
+                    width = 10)
+}, error = function(error_condition) {
+  print(glue::glue("ERROR: Gene Ontology pipe did not finish for samples"))
+  print(error_condition) # Print the error for debugging
+})
+
+####
+#Plot Pathways
+####
+library(openxlsx)
+#load files
+glut <- read.xlsx("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/2_AllcellsVsAllcells_from_MUTPCB_MUTVEHICLE/Glutamatergic_enrichr.xlsx", sheet = 4)
+gaba <- read.xlsx("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/2_AllcellsVsAllcells_from_MUTPCB_MUTVEHICLE/GABAergic_enrichr.xlsx", sheet = 4)
+NN <- read.xlsx("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/2_AllcellsVsAllcells_from_MUTPCB_MUTVEHICLE/Non-neuronal_enrichr.xlsx", sheet = 4)
+
+# Extract top 10 rows from each dataframe
+df1_top <- head(glut, 10)
+df2_top <- head(gaba, 10)
+df3_top <- head(NN, 10)
+
+# Combine the data frames into one
+combined_df <- bind_rows(
+  df1_top %>% mutate(Cell_Type = "Glutamatergic"),
+  df2_top %>% mutate(Cell_Type = "GABAergic"),
+  df3_top %>% mutate(Cell_Type = "Non-Neuronal")
+)
+
+# Plot using ggplot
+ggplot(combined_df, aes(x = Term, y = Cell_Type, color = P.value)) +
+  geom_point(size = 8) +
+  scale_color_gradientn(name = "P.value", colors = brewer.pal(n = 11, name = "RdBu")) +
+  scale_size_continuous(range = c(3, 8)) +
+  scale_y_discrete(name = "Cell Type") +
+  scale_x_discrete(name = "Terms") +
+  theme_minimal() +
+  guides(shape = guide_legend(override.aes = list(size = 5))) +
+  labs(title = 'KEGG Terms') +
+  theme(legend.position = "bottom") +
+  theme_bw(base_size = 24) +
+  theme(
+    legend.position = 'right',
+    legend.background = element_rect(),
+    plot.title = element_text(angle = 0, size = 18, face = 'bold', vjust = 1),
+    plot.subtitle = element_text(angle = 0, size = 14, face = 'bold', vjust = 1),
+    plot.caption = element_text(angle = 0, size = 14, face = 'bold', vjust = 1),
+    axis.text.x = element_text(angle = 90, size = 18, face = 'bold', hjust = 1.0, vjust = 0.5, colour = "black"),
+    axis.text.y = element_text(angle = 0, size = 18, face = 'bold', vjust = 0.5, colour = "black"),
+    axis.title = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.title.x = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.title.y = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.line = element_line(colour = 'black'),
+    # Legend
+    legend.key = element_blank(), # removes the border
+    legend.key.size = unit(1, "cm"), # Sets overall area/size of the legend
+    legend.text = element_text(size = 18, face = "bold"), # Text size
+    title = element_text(size = 18, face = "bold")
+  ) +
+  coord_flip()
+ggplot2::ggsave(glue("{directory_path}/top10KEGG_mouse.pdf"),
+                device = NULL,
+                height = 8.5,
+                width = 12)
