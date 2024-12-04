@@ -10,51 +10,42 @@ library(ggplot2)
 library(glue)
 
 #load data
-file_paths <- list(
-  Glut_human = "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/09_human_DEG_analysis/limmaVoomCC/Glutamatergic_enrichr.xlsx",
-  GABA_human = "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/09_human_DEG_analysis/limmaVoomCC/GABAergic_enrichr.xlsx",
-  NonN_human = "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/09_human_DEG_analysis/limmaVoomCC/Non-Neuronal_enrichr.xlsx",
-  Glut_mouse = "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/2_AllcellsVsAllcells_from_MUTPCB_MUTVEHICLE/Glutamatergic_enrichr.xlsx",
-  GABA_mouse = "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/2_AllcellsVsAllcells_from_MUTPCB_MUTVEHICLE/GABAergic_enrichr.xlsx",
-  NonN_mouse = "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/2_AllcellsVsAllcells_from_MUTPCB_MUTVEHICLE/Non-neuronal_enrichr.xlsx"
-)
-
-output_files <- list(
-  Glut_human = "Glut_human_filtered.xlsx",
-  GABA_human = "GABA_human_filtered.xlsx",
-  NonN_human = "NonN_human_filtered.xlsx",
-  Glut_mouse = "Glut_mouse_filtered.xlsx",
-  GABA_mouse = "GABA_mouse_filtered.xlsx",
-  NonN_mouse = "NonN_mouse_filtered.xlsx"
-)
-
-# Function to load, filter, and save
-process_file <- function(file_path, output_file, sheet = 4) {
-  data <- read.xlsx(file_path, sheet = sheet) %>% 
-    filter(P.value <= 0.05)
-  write.xlsx(data, output_file)
-  return(data)
-}
-
-# Apply to all datasets
-filtered_data <- lapply(names(file_paths), function(name) {
-  process_file(file_paths[[name]], output_files[[name]])
-})
-
-# Assign results to named list
-names(filtered_data) <- names(file_paths)
+human_degs <- read.csv('/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/09_human_DEG_analysis/limmaVoomCC/Human_rett_PCBvs_noPCB_sig_DEGs.csv')
+human_glut_list <- human_degs %>% filter(Cell_type == "Glutamatergic")
+human_gaba_list <- human_degs %>% filter(Cell_type == "GABAergic")
+human_nonn_list <- human_degs %>% filter(Cell_type == "Non-Neuronal")
+mouse_degs <- read.csv('/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/2_AllcellsVsAllcells_from_MUTPCB_MUTVEHICLE/sig_DEGs_2_AllcellsVsAllcells_from_MUTPCB_MUTVEHICLE.csv')
+# Convert the SYMBOL column to uppercase
+mouse_degs <- mouse_degs %>%
+  mutate(SYMBOL = toupper(SYMBOL))
+mouse_glut_list <- mouse_degs %>% filter(Cell_type == "Glutamatergic")
+mouse_gaba_list <- mouse_degs %>% filter(Cell_type == "GABAergic")
+mouse_nonn_list <- mouse_degs %>% filter(Cell_type == "Non-neuronal")
 
 #######################
 ## Create upset plot ##
 #######################
-listInput <- list(Glutamatergic_human = filtered_data$Glut_human$Term, 
-                  Glutamatergic_mouse = filtered_data$Glut_mouse$Term,
-                  GABAergic_human = filtered_data$GABA_human$Term, 
-                  GABAergic_mouse = filtered_data$GABA_mouse$Term,
-                  Non_neuronal_human = filtered_data$NonN_human$Term,
-                  Non_neuronal_mouse = filtered_data$NonN_mouse$Term)
+listInput <- list(Glutamatergic_human = human_glut_list$SYMBOL, 
+                  Glutamatergic_mouse = mouse_glut_list$SYMBOL,
+                  GABAergic_human = human_gaba_list$SYMBOL, 
+                  GABAergic_mouse = mouse_gaba_list$SYMBOL,
+                  Non_neuronal_human = human_nonn_list$SYMBOL,
+                  Non_neuronal_mouse = mouse_nonn_list$SYMBOL)
+# Find common SYMBOLs across all lists
+common_symbols <- Reduce(intersect, listInput)
+
+# View the result
+common_symbols
+# Find common SYMBOLs between GABAergic_human and GABAergic_mouse
+common_gaba_symbols <- intersect(listInput$GABAergic_human, listInput$GABAergic_mouse)
+
+newlist <- list(GABAergic_human = human_nonn_list$SYMBOL,  GABAergic_mouse = mouse_nonn_list$SYMBOL)
+# View the result
+common_gaba_symbols <- Reduce(intersect, newlist)
+common_gaba_symbols
+
 base_path <- "/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/09_human_DEG_analysis/limmaVoomCC/"
-pdf(glue("{base_path}upset_human_mouse_kegg.pdf"))
+pdf(glue("{base_path}upset_human_mouse_DEGs.pdf"))
 upset(fromList(listInput), sets = c('Glutamatergic_human','Glutamatergic_mouse', 'GABAergic_human', 'GABAergic_mouse', 'Non_neuronal_human', 'Non_neuronal_mouse'), keep.order = TRUE)
 dev.off()
 
