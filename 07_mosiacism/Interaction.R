@@ -48,7 +48,7 @@ anova_text <- paste(
 )
 # Create the interaction plot
 ggplot(xist_data, aes(x = Mecp2_allele, y = Xist, color = broad_class, shape = Treatment, group = interaction(Treatment, broad_class))) +
-           stat_summary(fun = mean, geom = "line", linewidth = 1) +  # Use `linewidth` for lines
+           stat_summary(fun = mean, geom = "line", linewidth = 1.5) +  # Use `linewidth` for lines
            stat_summary(fun = mean, geom = "point", size = 5) +      # Add points for means
            theme_minimal() +
            labs(title = "Interaction Plot: Xist Expression by Mecp2 Allele and Treatment",
@@ -76,11 +76,14 @@ ggplot(xist_data, aes(x = Mecp2_allele, y = Xist, color = broad_class, shape = T
     legend.text = element_text(size = 18, face = "bold"), # Text size
     title = element_text(size = 18, face = "bold")
   )
-
+ggplot2::ggsave("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/interaction_plot.pdf",
+                device = NULL,
+                height = 8.5,
+                width = 12)
 
 # Create the interaction plot with ANOVA statistics
 ggplot(xist_data, aes(x = Mecp2_allele, y = Xist, color = broad_class, shape = Treatment, group = interaction(Treatment, broad_class))) +
-  stat_summary(fun = mean, geom = "line", linewidth = 1) +  # Use `linewidth` for lines
+  stat_summary(fun = mean, geom = "line", linewidth = 1.5) +  # Use `linewidth` for lines
   stat_summary(fun = mean, geom = "point", size = 5) +      # Add points for means
   theme_minimal() +
   labs(title = "Interaction Plot: Xist Expression by Mecp2 Allele and Treatment",
@@ -105,3 +108,101 @@ ggplot(xist_data, aes(x = Mecp2_allele, y = Xist, color = broad_class, shape = T
     title = element_text(size = 18, face = "bold")
   ) +
   annotate("text", x = Inf, y = Inf, label = anova_text, hjust = 1.1, vjust = 1.1, size = 5, color = "black")
+
+
+### Testing
+
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+library(patchwork)  # For arranging plots side by side
+
+# Filter data for MUT and WT samples
+xist_data_total <- xist_data_total %>%
+  filter(Mecp2_allele != "Unparsed")
+
+xist_data_mut <- xist_data_total %>%
+  filter(Genotype != "WT")
+
+xist_data_wt <- xist_data_total %>%
+  filter(Genotype == "WT")
+
+# Ensure Mecp2_allele is a factor with the correct levels
+xist_data_mut <- xist_data_mut %>%
+  mutate(Mecp2_allele = factor(Mecp2_allele, levels = c("WT_Mecp2", "MUT_Mecp2")))
+
+# Perform three-way ANOVA for MUT samples (as in your original code)
+anova_result <- aov(Xist ~ Mecp2_allele * Treatment * broad_class, data = xist_data_mut)
+anova_summary <- summary(anova_result)
+
+# Extract F-values and p-values
+anova_stats <- data.frame(
+  Term = rownames(anova_summary[[1]]),
+  F_value = anova_summary[[1]]$`F value`,
+  P_value = anova_summary[[1]]$`Pr(>F)`
+)
+
+# Format ANOVA results for annotation
+anova_text <- paste(
+  "Three-Way ANOVA:\n",
+  "Mecp2_allele: F = ", round(anova_stats$F_value[1], 2), ", p = ", round(anova_stats$P_value[1], 4), "\n",
+  "Treatment: F = ", round(anova_stats$F_value[2], 2), ", p = ", round(anova_stats$P_value[2], 4), "\n",
+  "broad_class: F = ", round(anova_stats$F_value[3], 2), ", p = ", round(anova_stats$P_value[3], 4), "\n",
+  "Mecp2_allele:Treatment: F = ", round(anova_stats$F_value[4], 2), ", p = ", round(anova_stats$P_value[4], 4), "\n",
+  "Mecp2_allele:broad_class: F = ", round(anova_stats$F_value[5], 2), ", p = ", round(anova_stats$P_value[5], 4), "\n",
+  "Treatment:broad_class: F = ", round(anova_stats$F_value[6], 2), ", p = ", round(anova_stats$P_value[6], 4), "\n",
+  "Mecp2_allele:Treatment:broad_class: F = ", round(anova_stats$F_value[7], 2), ", p = ", round(anova_stats$P_value[7], 4),
+  sep = ""
+)
+
+# Create the interaction plot for MUT samples
+plot_mut <- ggplot(xist_data_mut, aes(x = Mecp2_allele, y = Xist, color = broad_class, shape = Treatment, group = interaction(Treatment, broad_class))) +
+  stat_summary(fun = mean, geom = "line", linewidth = 1.5) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  theme_minimal() +
+  labs(title = "MUT Samples: Xist Expression by Mecp2 Allele and Treatment",
+       x = "Mecp2_allele",
+       y = "Xist Expression Level",
+       color = "Cell Type",
+       shape = "Treatment") +
+  theme_bw(base_size = 24) +
+  theme(
+    legend.position = 'right',
+    plot.title = element_text(size = 18, face = 'bold', vjust = 1),
+    axis.text.x = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.text.y = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.title = element_text(size = 18, face = 'bold', colour = "black"),
+    legend.text = element_text(size = 18, face = "bold"),
+    title = element_text(size = 18, face = "bold")
+  )
+
+# Create the interaction plot for WT samples
+plot_wt <- ggplot(xist_data_wt, aes(x = Mecp2_allele, y = Xist, color = broad_class, shape = Treatment, group = interaction(Treatment, broad_class))) +
+  stat_summary(fun = mean, geom = "line", linewidth = 1.5) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  theme_minimal() +
+  labs(title = "WT Samples: Xist Expression by Mecp2 Allele and Treatment",
+       x = "Mecp2_allele",
+       y = "Xist Expression Level",
+       color = "Cell Type",
+       shape = "Treatment") +
+  theme_bw(base_size = 24) +
+  theme(
+    legend.position = 'right',
+    plot.title = element_text(size = 18, face = 'bold', vjust = 1),
+    axis.text.x = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.text.y = element_text(size = 18, face = 'bold', colour = "black"),
+    axis.title = element_text(size = 18, face = 'bold', colour = "black"),
+    legend.text = element_text(size = 18, face = "bold"),
+    title = element_text(size = 18, face = "bold")
+  )
+
+# Arrange plots side by side using patchwork
+combined_plot <- plot_mut + plot_wt
+
+# Display the combined plot
+combined_plot
+ggplot2::ggsave("/Users/osman/Documents/GitHub/PEBBLES_mouse_snRNAseq/07_mosiacism/interaction_plot_MUT_WT.pdf",
+                device = NULL,
+                height = 8.5,
+                width = 12)
