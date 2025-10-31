@@ -4,6 +4,12 @@
 
 Single-nuclei RNA-sequencing (snRNA-seq 5') analysis investigating polychlorinated biphenyl (PCB) effects on gene expression in the RTT mouse and human prefrontal cortex.
 
+### Associated Publication
+
+**Female cortical cellular mosaicism underlies shared MeCP2 and PCB impacted gene pathways**
+
+PubMed: https://pubmed.ncbi.nlm.nih.gov/40501678/
+
 ## Quick Start
 
 ### Installation
