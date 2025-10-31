@@ -39,13 +39,23 @@ scripts/
 ├── 02_celltype_annotation/    # Clustering, cell type identification
 ├── 03_deconvolution/          # Deconvolution methods
 ├── 04_core_analysis/          # Main DEG & co-expression analysis
-├── 05_comparative_analyses/   # Method comparisons
+│   ├── limma_voom_analysis/         # Limma-Voom DE analysis
+│   ├── genotype_comparisons/        # Genotype-specific DE comparisons
+│   ├── mosaicism_analysis/          # Cellular mosaicism DE analysis
+│   └── summary_analysis/            # Summary and proportions analysis
+├── 05_comparative_analyses/   # DE method comparisons
 ├── 06_human_translation/      # Human data analysis
 └── utils/                     # Reusable utility functions
 
 results/
 ├── figures/                   # Publication-ready figures
-├── tables/                    # Analysis results (DEG, modules, etc)
+├── tables/
+│   └── deg_results/          # Differential expression analysis results
+│       ├── by_celltype/      # DE results organized by cell type
+│       ├── by_genotype/      # DE results organized by genotype
+│       ├── mosaicism/        # Cellular mosaicism analysis results
+│       ├── method_comparisons/ # DE method comparison results
+│       └── summary/          # Summary tables and figures
 └── objects/                   # Saved R/Python objects
 
 data/
