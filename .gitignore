@@ -1,0 +1,35 @@
+# Large data files (not tracked)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*.h5
+data/processed/*.h5ad
+data/processed/*.h5seurat
+data/processed/*.RData
+
+# Large result files
+results/objects/*.RData
+results/objects/*.rds
+results/figures/*.pdf
+results/figures/*.png
+
+# Temporary and system files
+.DS_Store
+.Rhistory
+*.swp
+*~
+.Rproj.user/
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+*.egg-info/
+
+# Cache
+.cache/
+.Rcache/
+
+# Log files
+*.log
