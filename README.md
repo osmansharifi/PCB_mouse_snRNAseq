@@ -2,7 +2,7 @@
 
 ## Overview
 
-Single-nuclei RNA-sequencing (snRNA-seq) analysis investigating polychlorinated biphenyl (PCB) effects on gene expression in the mouse prefrontal cortex and striatum.
+Single-nuclei RNA-sequencing (snRNA-seq 5') analysis investigating polychlorinated biphenyl (PCB) effects on gene expression in the RTT mouse and human prefrontal cortex.
 
 ## Quick Start
 
