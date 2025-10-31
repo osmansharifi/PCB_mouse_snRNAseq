@@ -1,6 +1,0 @@
-GeneOverlap object:
-listA size=1599
-listB size=5740
-Intersection size=646
-Overlapping p-value=1.2e-38
-Jaccard Index=0.1
