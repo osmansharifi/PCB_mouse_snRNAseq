@@ -33,3 +33,16 @@ __pycache__/
 
 # Log files
 *.log
+
+# Large result files
+*.pdf
+*.png
+*.jpg
+*.xlsx
+*.xls
+*.RData
+*.rds
+results/figures/*
+results/objects/*
+!results/figures/.gitkeep
+!results/objects/.gitkeep
