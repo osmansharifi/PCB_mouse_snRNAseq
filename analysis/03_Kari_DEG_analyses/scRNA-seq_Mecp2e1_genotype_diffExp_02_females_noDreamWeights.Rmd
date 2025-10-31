@@ -1,0 +1,166 @@
+---
+title: "scRNA-seq_Mecp2e1_genotype_diffExp_02_females"
+author: "Kari Neier"
+date: "12/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir="/Users/karineier/Documents/scRNA-seq/Genotype/noDreamWeights/Females")
+```
+
+## Setting up
+
+Loading libraries, setting working directory, set up parallelization
+
+```{r setting up}
+
+packages <- c("edgeR", "tidyverse", "RColorBrewer", "org.Mm.eg.db", "AnnotationDbi", "EnhancedVolcano", "enrichR", "openxlsx", "glue", "Glimma", "DMRichR", "magrittr", "variancePartition", "UpSetR", "ComplexUpset")
+stopifnot(suppressMessages(sapply(packages, require, character.only=TRUE)))
+
+enrichR:::.onAttach()
+
+param <- SnowParam(2, "SOCK", progressbar = TRUE)
+register(param)
+
+```
+
+## Loading in filtered data
+
+``` {r load_filtered_data}
+
+load("/Users/karineier/Documents/scRNA-seq/Females/Filtered_female_data.RData")
+
+```
+
+## Normalizing samples, DEG analysis, Pathway analysis
+
+``` {r normalizing samples, DEG analysis, Pathway analysis, echo=FALSE}
+
+design = design[,-42] # Removing final column that contains a duplicate variable for genotype 
+
+cell_types = droplevels(cell_types)
+
+for (i in cell_types) {
+  
+  dir.create(glue::glue("{i}"))
+  dir.create(glue::glue("{i}/QC"))
+  dir.create(glue::glue("{i}/plotData"))
+  
+  print(glue::glue("Normalizing {i} cells"))
+  
+  design.new <- design %>%
+    dplyr::filter(cell_type == i)
+  
+  design.new$genotype = factor(design.new$genotype, levels=c("WT", "MUTANT"))
+  
+  colnames(design.new) = gsub(" ", "_", colnames(design.new))
+  colnames(design.new) = gsub(";_$", "", colnames(design.new))
+  colnames(design.new) = gsub("\\:", "_", colnames(design.new))
+  colnames(design.new) = gsub("\\;", "", colnames(design.new))
+  colnames(design.new) = gsub("\\/", "_", colnames(design.new))
+  colnames(design.new) = gsub("-", "_", colnames(design.new))
+  colnames(design.new) = gsub("\\.", "", colnames(design.new))
+  
+  samples.idx <- pmatch(design.new$cell_ID, rownames(DGEList[[i]]$samples))
+  design.new <- design.new[order(samples.idx),]
+  stopifnot(rownames(DGEList[[i]]$samples)==design.new$cell_ID)
+  
+  mm <- model.matrix(~genotype, data=design.new)
+    
+  pdf(glue::glue("{i}/QC/voom_mean-variance_trend.pdf"), height=8.5, width=11)
+  voomLogCPM <- voom(DGEList[[i]],
+                mm,
+                plot=TRUE)
+  dev.off()
+    
+  # Boxplots of logCPM values before and after voom normalization
+  pdf(glue::glue("{i}/QC/normalization_boxplots.pdf"), height=8.5, width=11)
+  par(mfrow=c(1,2))
+    
+  logCPM <- cpm(DGEList[[i]], log=TRUE)
+  col <- brewer.pal(nsamples, "Paired")
+  boxplot(logCPM, las = 2, col = col, main = "")
+  title(main="A. Unnormalized data", ylab="Log-cpm")
+    
+  boxplot(voomLogCPM$E, las = 2, col = col, main="")
+  title(main="B. Normalized data", ylab="Log-cpm")
+    
+  dev.off()
+    
+  # Fitting linear models in limma
+    
+  print(glue::glue("Testing {i} cells for differential expression"))
+    
+  fit <- lmFit(voomLogCPM,
+                mm)
+    
+  head(coef(fit))
+    
+  # Save normalized expression values
+  voomLogCPM$E %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column(var = "geneSymbol") %>%
+    openxlsx::write.xlsx(glue::glue("{i}/plotData/voomLogCPM.xlsx"))
+    
+  # Create DEG List 
+    
+  print(glue::glue("Creating DEG list of {i} cells for genotype"))
+    
+  efit <- fit %>%
+    contrasts.fit(coef=2) %>% eBayes()
+    
+  pdf(glue::glue("{i}/QC/final_model_mean-variance_trend.pdf"), height=8.5, width=11)
+    
+  plotSA(dfit, main=glue::glue("Final model {i}: Mean-variance trend"))
+    
+  dev.off()
+    
+  # Top DEGs
+    
+  DEGs <- efit %>%
+    topTable(sort.by = "P", n = Inf) %>%
+    rownames_to_column() %>%
+    tibble::as_tibble() %>%
+    dplyr::rename(SYMBOL = rowname) %>%
+    dplyr::mutate(FC = dplyr::case_when(logFC >0 ~ 2^logFC,
+                                          logFC <0 ~ -1/(2^logFC))) %>%
+    dplyr::select(SYMBOL, FC, logFC, P.Value, adj.P.Val, AveExpr, t, B) %T>%
+    openxlsx::write.xlsx(file=glue::glue("{i}/DEGs.xlsx")) %>%
+    dplyr::filter(P.Value < 0.05) %T>%
+    openxlsx::write.xlsx(file=glue::glue("{i}/sig_DEGs.xlsx"))
+    
+    print(glue::glue("GO and Pathway analysis of {i} cells"))
+    
+  tryCatch({
+    DEGs %>% 
+      dplyr::select(SYMBOL) %>%
+      purrr::flatten() %>%
+      enrichR::enrichr(c("GO_Biological_Process_2018",
+                           "GO_Molecular_Function_2018",
+                           "GO_Cellular_Component_2018",
+                           "KEGG_2019_Mouse",
+                           "Panther_2016",
+                           "Reactome_2016",
+                           "RNA-Seq_Disease_Gene_and_Drug_Signatures_from_GEO")) %>%
+      purrr::set_names(names(.) %>% stringr::str_trunc(31, ellipsis="")) %T>%
+      openxlsx::write.xlsx(file=glue::glue("{i}/enrichr.xlsx")) %>%
+      DMRichR::slimGO(tool = "enrichR",
+                        annoDb = "org.Mm.eg.db",
+                        plots = FALSE) %T>%
+      openxlsx::write.xlsx(file = glue::glue("{i}/rrvgo_enrichr.xlsx")) %>%
+      DMRichR::GOplot() %>%
+      ggplot2::ggsave(glue::glue("{i}/enrichr_plot.pdf"),
+                        plot = .,
+                        device = NULL,
+                        height = 8.5,
+                        width = 10) },
+    error = function(error_condition) {
+      print(glue::glue("ERROR: Gene Ontology pipe did not finish for {i} cells"))
+    })
+  print(glue::glue("The pipeline has finished for {i} cells"))
+
+}
+
+```
