@@ -1,0 +1,38 @@
+name: pcb_snrnaseq
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  # R and core
+  - r-base=4.3
+  - r-devtools
+  - r-rmarkdown
+  
+  # Bioinformatics core
+  - bioconductor-seurat=4.3
+  - bioconductor-seurat-disk
+  - bioconductor-scran
+  - bioconductor-edger
+  - bioconductor-deseq2
+  - bioconductor-limma
+  - bioconductor-fgsea
+  - bioconductor-complexheatmap
+  
+  # Data manipulation
+  - r-tidyverse
+  - r-data.table
+  - r-dplyr
+  - r-tidyr
+  
+  # Visualization
+  - r-ggplot2
+  - r-gridextra
+  - r-cowplot
+  
+  # Python (optional)
+  - python=3.10
+  - scanpy
+  - anndata
+  - pandas
+  - numpy
+  - scipy
