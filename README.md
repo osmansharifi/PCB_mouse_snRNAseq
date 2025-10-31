@@ -73,7 +73,7 @@ See `environment.yml` for complete list. Key packages:
 
 ## Code Standards
 
-All code follows professional R standards:
+All code follows R standards:
 - snake_case naming conventions
 - Comprehensive script headers
 - Reusable functions in `scripts/utils/`
