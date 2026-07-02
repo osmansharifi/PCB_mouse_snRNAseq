@@ -306,9 +306,9 @@ if(length(common_gaba_symbols) >= 5){
   print(glue("Only {length(common_gaba_symbols)} common GABAergic genes found - skipping enrichment (need at least 5)"))
 }
 
-#############################
+##############################
 ## Glutamatergic enrichment ##
-#############################
+##############################
 
 if(length(common_glut_symbols) >= 5){
   tryCatch({
